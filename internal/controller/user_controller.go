@@ -58,7 +58,7 @@ func (uc *UserController) Register(ctx *gin.Context) {
 
 	//3.domain 转换response DTO,屏蔽password敏感字段
 	//domain.User包含加密Password,不能传给前端
-	resp := response.UserResp{
+	resp := response.RegisterResp{
 		UserID:   userDomain.ID,
 		Username: userDomain.Username,
 	}
