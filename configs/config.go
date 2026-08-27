@@ -17,11 +17,16 @@ type Config struct {
 		Password string `yaml:"password"`
 		Charset  string `yaml:"charset"`
 	} `yaml:"mysql"`
+	Jwt struct {
+		Secret        string `yaml:"secret"`
+		AccessExpHour int    `yaml:"access_exp_hour"`
+		RefreshExpDay int    `yaml:"refresh_exp_day"`
+	} `yaml:"jwt"`
 }
 
 // LoadConfig 加载配置文件
-func LoadConfig(filePath string) (*Config, error) {
-	data, err := os.ReadFile(filePath)
+func LoadConfig(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

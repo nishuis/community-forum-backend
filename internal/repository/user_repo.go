@@ -1,7 +1,10 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/nishuis/community-forum-backend/internal/domain"
+	"github.com/nishuis/community-forum-backend/internal/errs"
 	"gorm.io/gorm"
 )
 
@@ -36,5 +39,11 @@ func (ur *UserRepo) FindUserByUsername(username string) (*domain.User, error) {
 func (ur *UserRepo) CreateUser(user *domain.User) error {
 	// db.Create: gorm 提供的插入方法，传入模型指针，自动提取结构体字段生成INSERT SQL
 	err := ur.db.Create(user).Error
+	//捕获唯一索引冲突，用户名已经检查过，这里只能是邮箱冲突
+	if err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return errs.ErrEmailExisted
+		}
+	}
 	return err
 }

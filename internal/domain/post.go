@@ -7,9 +7,13 @@ import (
 )
 
 type Post struct {
-	gorm.Model
-	AuthorID uint `gorm:"type:BIGINT UNSIGNED;not null;index;comment:'作者ID,关联user.ID'"`
-	Author   User `gorm:"foreignKey:AuthorID"`
+	ID        int64          `gorm:"primaryKey;autoIncrement;comment:'主键ID'"`
+	CreatedAt time.Time      `gorm:"comment:'创建时间'"`
+	UpdatedAt time.Time      `gorm:"comment:'更新时间'"`
+	DeletedAt gorm.DeletedAt `gorm:"index;comment:'删除时间'"`
+
+	AuthorID int64 `gorm:"type:BIGINT UNSIGNED;not null;index;comment:'作者ID,关联user.ID'"`
+	Author   User  `gorm:"foreignKey:AuthorID"`
 	//CategoryID uint     `gorm:"type:BIGINT UNSIGNED;index:idx_posts_category_id;comment:'板块类型'"`
 	//Category   Category `gorm:"foreignKey:CategoryID"`
 
