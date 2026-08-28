@@ -22,6 +22,9 @@ type Config struct {
 		AccessExpHour int    `yaml:"access_exp_hour"`
 		RefreshExpDay int    `yaml:"refresh_exp_day"`
 	} `yaml:"jwt"`
+	Server struct {
+		Port int `yaml:"port"`
+	} `yaml:"server"`
 }
 
 // LoadConfig 加载配置文件

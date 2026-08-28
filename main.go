@@ -66,7 +66,7 @@ func main() {
 	}
 
 	//6.启动web，监听本地8080端口
-	err = r.Run(":8080")
+	err = r.Run(fmt.Sprint(":", cfg.Server.Port))
 	if err != nil {
 		panic(err)
 	}

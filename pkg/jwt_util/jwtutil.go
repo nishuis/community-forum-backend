@@ -3,6 +3,7 @@ package jwtutil
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,7 +17,7 @@ type Claims struct {
 }
 
 var (
-	ErrInvalidToken      = errors.New("invalid token")
+	ErrTokenInvalid      = errors.New("invalid token")
 	ErrTokenExpired      = jwt.ErrTokenExpired
 	ErrTokenSignatureErr = jwt.ErrTokenSignatureInvalid
 )
@@ -70,7 +71,7 @@ func ParseToken(tokenStr string, secret string) (*Claims, error) {
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-	return nil, ErrInvalidToken
+	return nil, ErrTokenInvalid
 }
 
 // IsTokenExpired 判断错误是否是token过期
@@ -81,4 +82,22 @@ func IsTokenExpired(err error) bool {
 // IsTokenSignatureError 判断是否是签名错误
 func IsTokenSignatureError(err error) bool {
 	return errors.Is(err, ErrTokenSignatureErr)
+}
+
+// SplitToken 将完整jwt拆分成(h.p)and(s)
+func SplitToken(fullToken string) (headerPayload, signature string, err error) {
+	parts := strings.Split(fullToken, ".")
+	if len(parts) != 3 {
+		return "", "", ErrTokenInvalid
+	}
+	return parts[0] + "." + parts[1], parts[2], nil
+}
+
+// ReassembleToken 用headerPayload, signature复原jwt
+func ReassembleToken(headerPayload, signature string) (fullToken string, err error) {
+	hpParts := strings.Split(headerPayload, ".")
+	if len(hpParts) != 2 {
+		return "", ErrTokenInvalid
+	}
+	return hpParts[0] + hpParts[1] + "." + signature, nil
 }
