@@ -11,7 +11,7 @@ import (
 
 // Claims jwt载荷
 type Claims struct {
-	UserId   int64  `json:"user"`
+	UserId   int64  `json:"user_id"`
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/controller"
 	"github.com/nishuis/community-forum-backend/internal/infra/db"
+	"github.com/nishuis/community-forum-backend/internal/middleware"
 	"github.com/nishuis/community-forum-backend/internal/repository"
 	"github.com/nishuis/community-forum-backend/internal/service"
 )
@@ -53,16 +54,20 @@ func main() {
 	})
 
 	//5.路由分组
-	apiGroup := r.Group("/api")
+	//公开接口组
+	publicGroup := r.Group("/api")
 	{
-		authGroup := apiGroup.Group("/auth")
-		{
-			//注册接口 POST /api/auth/register
-			authGroup.POST("/register", userCtrl.Register)
+		//注册接口 POST /apiregister
+		publicGroup.POST("/register", userCtrl.Register)
 
-			//登录接口 POST /api/auth/login
-			authGroup.POST("/login", authCtrl.Login)
-		}
+		//登录接口 POST /apilogin
+		publicGroup.POST("/login", authCtrl.Login)
+	}
+	//需鉴权接口组
+	authGroup := r.Group("/api")
+	authGroup.Use(middleware.JWTAuth(cfg))
+	{
+		authGroup.POST("/me", userCtrl.GetMessageController)
 	}
 
 	//6.启动web，监听本地8080端口
