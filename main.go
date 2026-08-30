@@ -67,7 +67,7 @@ func main() {
 	authGroup := r.Group("/api")
 	authGroup.Use(middleware.JWTAuth(cfg))
 	{
-		authGroup.POST("/me", userCtrl.GetMessageController)
+		authGroup.GET("/me", userCtrl.GetMessageController)
 	}
 
 	//6.启动web，监听本地8080端口

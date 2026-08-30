@@ -75,6 +75,7 @@ func (ac *AuthController) Login(ginctx *gin.Context) {
 
 	//3.响应前端
 	resp := response.LoginResp{
+		Username:     req.Username,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
