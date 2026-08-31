@@ -52,3 +52,19 @@ func (s *PostService) CreatePost(ctx context.Context, title string, content stri
 
 	return newPost, err
 }
+
+// DeletePost 删帖业务
+func (s *PostService) DeletePost(ctx context.Context, userId int64, postId int64) error {
+	//1.查询帖子存在
+	post, err := s.postRepo.FindPostById(ctx, postId)
+	if err != nil {
+		return err
+	}
+	if post.AuthorID != userId {
+		return errs.ErrPostNotAuthor
+	}
+
+	//2.删除帖子
+	err = s.postRepo.DeletePost(ctx, postId)
+	return err
+}

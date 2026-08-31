@@ -26,7 +26,7 @@ type UserController struct {
 	userService *service.UserService
 }
 
-// NewUserController 新建用户控制器
+// NewUserController 只管用户资源 CRUD，不生产 JWT 令牌
 func NewUserController(userService *service.UserService) *UserController {
 	return &UserController{userService: userService}
 }

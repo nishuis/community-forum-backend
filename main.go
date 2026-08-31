@@ -40,12 +40,15 @@ func main() {
 	//3.组装依赖链
 	//repo
 	userRepo := repository.NewUserRepo(db)
+	postRepo := repository.NewPostRepo(db)
 	//service
 	userService := service.NewUserService(userRepo, cfg)
 	authService := service.NewAuthService(userRepo, cfg)
+	postService := service.NewPostService(postRepo, userRepo, cfg)
 	//controller
 	userCtrl := controller.NewUserController(userService)
 	authCtrl := controller.NewAuthController(authService)
+	postCtrl := controller.NewPostController(postService)
 
 	//4.初始化Gin，组装依赖链
 	r := gin.Default()
@@ -68,6 +71,9 @@ func main() {
 	authGroup.Use(middleware.JWTAuth(cfg))
 	{
 		authGroup.GET("/me", userCtrl.GetMessageController)
+
+		//发帖
+		authGroup.POST("/create_post", postCtrl.CreatePost)
 	}
 
 	//6.启动web，监听本地8080端口

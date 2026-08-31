@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nishuis/community-forum-backend/internal/dto/request"
@@ -14,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// PostController 帖子控制器
+// PostController 只管帖子资源 CRUD，不生产 JWT 令牌
 type PostController struct {
 	postService *service.PostService
 }
@@ -24,7 +25,7 @@ func NewPostController(ps *service.PostService) *PostController {
 	return &PostController{postService: ps}
 }
 
-// CreatePost 发帖接口
+// CreatePost 发帖接口 POST请求
 func (c *PostController) CreatePost(ginctx *gin.Context) {
 	//1.获取userId,title,content
 	val, ok := ginctx.Get("userId")
@@ -106,4 +107,88 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 		"data": resp,
 	})
 
+}
+
+// DeletePost 删帖端口 DELETE请求
+func (c *PostController) DeletePost(ginctx *gin.Context) {
+	//1.获取userId
+	val, ok := ginctx.Get("userId")
+	if !ok {
+		log.Printf("jwt中间件异常放行，未获取到userId")
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeServerInternal,
+			"msg":  "服务器内部错误",
+		})
+		return
+	}
+	userId, ok := val.(int64)
+	if !ok {
+		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeServerInternal,
+			"msg":  "服务器内部错误",
+		})
+		return
+	}
+
+	//2.从URL获取post_id
+	postIdStr := ginctx.Param("post_id")
+	postId, err := strconv.ParseInt(postIdStr, 10, 64)
+	if err != nil {
+		log.Printf("post_id 参数错误: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeParamError,
+			"msg":  "post_id 参数格式错误",
+		})
+		return
+	}
+
+	//3.调用删帖服务
+	err = c.postService.DeletePost(ginctx.Request.Context(), userId, postId)
+	if err != nil {
+		//处理context错误
+		if errors.Is(err, context.Canceled) {
+			log.Printf("删帖请求客户端主动取消: %v", err)
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeContextCancel,
+				"msg":  "服务取消",
+			})
+			return
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			log.Printf("请求超时：%v", err)
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeDeadLineExceeded,
+				"msg":  "超时未响应",
+			})
+			return
+		}
+
+		//处理业务错误
+		switch {
+		case errors.Is(err, errs.ErrPostNotAuthor):
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeAuthFail,
+				"msg":  "只能删除自己的帖子",
+			})
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodePostNotExist,
+				"msg":  "内容不存在",
+			})
+		default:
+			log.Printf("删帖业务错误：%v", err)
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeServerInternal,
+				"msg":  "服务器内部错误",
+			})
+		}
+		return
+	}
+
+	//4.成功响应，无响应体
+	ginctx.JSON(http.StatusOK, gin.H{
+		"code": errs.CodeDeleted,
+		"msg":  "删除成功",
+	})
 }

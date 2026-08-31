@@ -13,6 +13,7 @@ import (
 	"github.com/nishuis/community-forum-backend/internal/service"
 )
 
+// AuthController 只管凭证、身份认证，不操作用户业务字段
 type AuthController struct {
 	authService *service.AuthService
 }

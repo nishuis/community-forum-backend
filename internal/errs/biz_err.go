@@ -14,6 +14,8 @@ var (
 	//Post错误
 	ErrPostTitleTooLong = errors.New("post's title too long")
 	ErrPostTitleEmpty   = errors.New("post's title can not be empty")
+	ErrPostIdZero       = errors.New("postId can not be 0")
+	ErrPostNotAuthor    = errors.New("ont author")
 )
 
 // 响应码
@@ -21,6 +23,7 @@ const (
 	//成功响应
 	CodeOK       = 200 //成功
 	CodeCreated  = 201 //资源创建成功
+	CodeDeleted  = 202 //资源删除成功
 	CodeNoContet = 204 //成功但无响应体
 
 	//客户端错误
@@ -29,6 +32,7 @@ const (
 	CodeUnauthorized = 1003 //未认证（缺少token）
 	CodeUserExists   = 1004 //用户名已存在
 	CodeUserNotExist = 1005 //用户不存在
+	CodePostNotExist = 1006 //帖子不存在
 
 	//Post错误
 

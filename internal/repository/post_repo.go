@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/nishuis/community-forum-backend/internal/domain"
+	"github.com/nishuis/community-forum-backend/internal/errs"
 	"gorm.io/gorm"
 )
 
@@ -85,4 +86,15 @@ func (r *PostRepo) FindPostByAuthorId(ctx context.Context, authorId int64) ([]*d
 func (r *PostRepo) CreatePost(ctx context.Context, post *domain.Post) error {
 
 	return r.db.WithContext(ctx).Create(post).Error
+}
+
+// DeletePost 删除帖子
+func (r *PostRepo) DeletePost(ctx context.Context, postId int64) error {
+	//兜底恶性bug，防止删除整表
+	//上层new空Post结构体，或者newPost没填ID，postid会为“0”
+	//Delete 就会缺少 WHERE 条件，造成全表软删除。
+	if postId == 0 {
+		return errs.ErrPostIdZero
+	}
+	return r.db.WithContext(ctx).Where("post_id = ?", postId).Delete(&domain.Post{}).Error
 }
