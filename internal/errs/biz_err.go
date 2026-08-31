@@ -10,6 +10,10 @@ var (
 	ErrPasswordWrong   = errors.New("password wrong")
 	ErrUsernameExisted = errors.New("username already existed")
 	ErrEmailExisted    = errors.New("email already existed")
+
+	//Post错误
+	ErrPostTitleTooLong = errors.New("post's title too long")
+	ErrPostTitleEmpty   = errors.New("post's title can not be empty")
 )
 
 // 响应码
@@ -25,6 +29,8 @@ const (
 	CodeUnauthorized = 1003 //未认证（缺少token）
 	CodeUserExists   = 1004 //用户名已存在
 	CodeUserNotExist = 1005 //用户不存在
+
+	//Post错误
 
 	//服务端错误
 	CodeServerInternal   = 2001 //服务器内部错误

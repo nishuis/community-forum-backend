@@ -31,7 +31,8 @@ func JWTAuth(cfg *configs.Config) gin.HandlerFunc {
 
 		//2.校验Bearer格式：bearer token
 		parts := strings.SplitN(authHeader, " ", 2)
-		if !(len(parts) == 2 && parts[0] == "Bearer") {
+		//兼容大小写“Bearer”
+		if !(len(parts) == 2 && strings.EqualFold(parts[0], "Bearer")) {
 			c.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeParamError,
 				"msg":  "格式错误，认证失败",
