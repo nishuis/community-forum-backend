@@ -14,7 +14,6 @@ import (
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"github.com/nishuis/community-forum-backend/internal/service"
 	ginutil "github.com/nishuis/community-forum-backend/pkg/gin_util"
-	"gorm.io/gorm"
 )
 
 // PostController 只管帖子资源 CRUD，不生产 JWT 令牌
@@ -82,7 +81,7 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 		}
 
 		//处理业务错误
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, errs.ErrUserNotFound) {
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeUserNotExist,
 				"msg":  "用户不存在",
@@ -173,7 +172,7 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 				"code": errs.CodeAuthFail,
 				"msg":  "只能删除自己的帖子",
 			})
-		case errors.Is(err, gorm.ErrRecordNotFound):
+		case errors.Is(err, errs.ErrPostNotExist):
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodePostNotExist,
 				"msg":  "内容不存在",

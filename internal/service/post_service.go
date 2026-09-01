@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/domain"
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"github.com/nishuis/community-forum-backend/internal/repository"
+	"gorm.io/gorm"
 )
 
 // PostService 帖子业务结构体，依赖PostRepo注入
@@ -38,6 +40,9 @@ func (s *PostService) CreatePost(ctx context.Context, title string, content stri
 	//检查用户是否还存在
 	_, err := s.userRepo.FindUserByUserId(ctx, authorId)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrUserNotFound
+		}
 		return nil, err
 	}
 
@@ -59,6 +64,9 @@ func (s *PostService) DeletePost(ctx context.Context, userId int64, postId int64
 	//1.查询帖子存在
 	post, err := s.postRepo.FindPostById(ctx, postId)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errs.ErrPostNotExist
+		}
 		return err
 	}
 	//2.验权
