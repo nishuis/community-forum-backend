@@ -60,11 +60,40 @@ func (s *PostService) DeletePost(ctx context.Context, userId int64, postId int64
 	if err != nil {
 		return err
 	}
+	//2.验权
 	if post.AuthorID != userId {
 		return errs.ErrPostNotAuthor
 	}
 
-	//2.删除帖子
+	//3.删除帖子
 	err = s.postRepo.DeletePost(ctx, postId)
 	return err
+}
+
+// UpdatePost 编辑帖子
+func (s *PostService) UpdatePost(ctx context.Context, userId int64, postId int64, updateTitle string, updateContent string) error {
+	//1.验非空
+	if updateTitle == "" && updateContent == "" {
+		return errs.ErrParamWrong
+	}
+
+	//2..查询帖子存在
+	post, err := s.postRepo.FindPostById(ctx, postId)
+	if err != nil {
+		return errs.ErrPostNotExist
+	}
+	//3..验权
+	if post.AuthorID != userId {
+		return errs.ErrPostNotAuthor
+	}
+
+	//4.更新帖子
+	rows, err := s.postRepo.UpdatePost(ctx, postId, updateTitle, updateContent)
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errs.ErrPostNotExist
+	}
+	return nil
 }

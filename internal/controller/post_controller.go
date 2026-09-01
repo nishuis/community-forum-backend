@@ -12,6 +12,7 @@ import (
 	"github.com/nishuis/community-forum-backend/internal/dto/response"
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"github.com/nishuis/community-forum-backend/internal/service"
+	ginutil "github.com/nishuis/community-forum-backend/pkg/gin_util"
 	"gorm.io/gorm"
 )
 
@@ -190,5 +191,78 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 	ginctx.JSON(http.StatusOK, gin.H{
 		"code": errs.CodeDeleted,
 		"msg":  "删除成功",
+	})
+}
+
+// UpdatePost 编辑帖子 PUT请求
+func (c *PostController) UpdatePost(ginctx *gin.Context) {
+	//1.获取当前用户基本信息
+	userId, _, ok := ginutil.GetCurrentUserInfo(ginctx)
+	if !ok {
+		return
+	}
+
+	//2.从url获取postId,
+	// 从请求体获取updateTitel,updateContent
+	postIdStr := ginctx.Param("post_id")
+	postId, err := strconv.ParseInt(postIdStr, 10, 64)
+	if err != nil {
+		log.Printf("post_id 参数错误: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeParamError,
+			"msg":  "post_id 参数格式错误",
+		})
+		return
+	}
+	var req request.UpdatePostReq
+	if err := ginctx.ShouldBindJSON(&req); err != nil {
+		log.Printf("bind error: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeParamError,
+			"msg":  "请求参数错误",
+		})
+		return
+	}
+
+	//3.调用服务
+	err = c.postService.UpdatePost(ginctx.Request.Context(), userId, postId, req.UpdateTitle, req.UpdateContent)
+	if err != nil {
+		//处理context错误
+		handle := ginutil.HandleContextError(ginctx, err, "编辑帖子业务")
+		if handle {
+			return
+		}
+
+		//处理业务错误
+		switch {
+		case errors.Is(err, errs.ErrPostNotAuthor):
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeAuthFail,
+				"msg":  "只能编辑自己的帖子",
+			})
+		case errors.Is(err, errs.ErrParamWrong):
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeParamError,
+				"msg":  "未修改任何内容",
+			})
+		case errors.Is(err, errs.ErrPostNotExist):
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodePostNotExist,
+				"msg":  "内容不存在",
+			})
+		default:
+			log.Printf("更新帖子业务错误：%v", err)
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeServerInternal,
+				"msg":  "服务器内部错误",
+			})
+		}
+		return
+	}
+
+	//4.成功响应，无响应体
+	ginctx.JSON(http.StatusOK, gin.H{
+		"code": errs.CodeOK,
+		"msg":  "编辑成功",
 	})
 }

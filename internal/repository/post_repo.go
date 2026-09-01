@@ -98,3 +98,23 @@ func (r *PostRepo) DeletePost(ctx context.Context, postId int64) error {
 	}
 	return r.db.WithContext(ctx).Where("post_id = ?", postId).Delete(&domain.Post{}).Error
 }
+
+// UpdatePost 修改帖子
+func (r *PostRepo) UpdatePost(ctx context.Context, postId int64, updateTitle string, updateContent string) (int64, error) {
+
+	updateMap := make(map[string]any)
+
+	//map拦截空字段
+	if updateTitle != "" {
+		updateMap["title"] = updateTitle
+	}
+	if updateContent != "" {
+		updateMap["content"] = updateContent
+	}
+
+	res := r.db.WithContext(ctx).Model(&domain.Post{}).Where("post_id = ?", postId).
+		Updates(updateMap)
+
+	//返回受影响的行数和error
+	return res.RowsAffected, res.Error
+}

@@ -10,12 +10,14 @@ var (
 	ErrPasswordWrong   = errors.New("password wrong")
 	ErrUsernameExisted = errors.New("username already existed")
 	ErrEmailExisted    = errors.New("email already existed")
+	ErrParamWrong      = errors.New("params wrong")
 
 	//Post错误
 	ErrPostTitleTooLong = errors.New("post's title too long")
 	ErrPostTitleEmpty   = errors.New("post's title can not be empty")
 	ErrPostIdZero       = errors.New("postId can not be 0")
-	ErrPostNotAuthor    = errors.New("ont author")
+	ErrPostNotAuthor    = errors.New("not author")
+	ErrPostNotExist     = errors.New("post not exist")
 )
 
 // 响应码
