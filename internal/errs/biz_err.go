@@ -23,10 +23,10 @@ var (
 // 响应码
 const (
 	//成功响应
-	CodeOK       = 200 //成功
-	CodeCreated  = 201 //资源创建成功
-	CodeDeleted  = 202 //资源删除成功
-	CodeNoContet = 204 //成功但无响应体
+	CodeOK        = 200 //成功
+	CodeCreated   = 201 //资源创建成功
+	CodeDeleted   = 202 //资源删除成功
+	CodeNoContent = 204 //成功但无响应体
 
 	//客户端错误
 	CodeParamError   = 1001 //请求参数错误

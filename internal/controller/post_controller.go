@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nishuis/community-forum-backend/internal/dto/convert"
 	"github.com/nishuis/community-forum-backend/internal/dto/request"
 	"github.com/nishuis/community-forum-backend/internal/dto/response"
 	"github.com/nishuis/community-forum-backend/internal/errs"
@@ -265,4 +266,61 @@ func (c *PostController) UpdatePost(ginctx *gin.Context) {
 		"code": errs.CodeOK,
 		"msg":  "编辑成功",
 	})
+}
+
+// ShowByKeyWordOffset 关键词查询帖子并分页 GET请求
+func (c *PostController) ShowByKeyWordOffset(ginctx *gin.Context) {
+	//开放接口，无需鉴权
+
+	//1.获取参数
+	var req request.ShowByKeyWordOffsetReq
+	err := ginctx.ShouldBindQuery(&req)
+	if err != nil {
+		log.Printf("ShowByKeyWordOffset绑定失败：%v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeParamError,
+			"msg":  "参数错误",
+		})
+		return
+	}
+
+	//2.调用service
+	ctx := ginctx.Request.Context()
+	posts, total, err := c.postService.ShowByKeyWordOffset(ctx, req.KeyWord, req.Page, req.PageSize)
+	if err != nil {
+		//处理context错误
+		handle := ginutil.HandleContextError(ginctx, err, "ShowByKeyWordOffset")
+		if handle {
+			return
+		}
+
+		//其他错误
+		log.Printf("ShowByKeyWordOffset Error: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeServerInternal,
+			"msg":  "服务器内部错误",
+		})
+		return
+	}
+
+	//绑定响应体，成功响应
+	//计算总页数
+	totalPage := (total + int64(req.PageSize) - 1) / int64(req.PageSize)
+	//[]*domain.Post 转 []*response.PostListItem
+	postList := convert.ConvertPostListItemList(posts)
+	//绑定通用分页返回结构体
+	resp := response.OffsetPageResp[*response.PostListItem]{
+		List:      postList,
+		Total:     total,
+		Page:      req.Page,
+		PageSize:  req.PageSize,
+		TotalPage: totalPage,
+	}
+
+	ginctx.JSON(http.StatusOK, gin.H{
+		"code": errs.CodeOK,
+		"msg":  "查询成功",
+		"data": resp,
+	})
+
 }

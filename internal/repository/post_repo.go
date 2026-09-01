@@ -47,32 +47,6 @@ func (r *PostRepo) FindPostByTitle(ctx context.Context, postTitle string) ([]*do
 	return posts, err
 }
 
-// FindPostByTitleLike 标题模糊查询并分页
-func (r *PostRepo) FindPostByTitleLike(ctx context.Context, postTitle string, page int, pageSize int) ([]*domain.Post, int64, error) {
-
-	var list []*domain.Post
-	var total int64
-
-	// WithContext 返回绑定了ctx的新*gorm.DB实例，监听取消/超时信号
-	// Model 指定操作 domain.Post, GORM自动映射posts表，自动追加deleted_at IS NULL(软删除过滤)
-	db := r.db.WithContext(ctx).Model(&domain.Post{})
-	postTitle = Escape(postTitle)
-	db = db.Where("title LIKE ?", "%"+postTitle+"%")
-
-	// Count 调用并执行拼好的Where条件，获取查到的个数
-	// 执行完后db上的Where条件依然保留
-	if err := db.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	// 链式叠加，追加排序，分页，查询
-	// Find查不到会返回空切片
-	err := db.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&list).Error
-
-	return list, total, err
-
-}
-
 // FindPostByAuthorId 通过作者ID(关联着userID)查找帖子
 func (r *PostRepo) FindPostByAuthorId(ctx context.Context, authorId int64) ([]*domain.Post, error) {
 
@@ -117,4 +91,65 @@ func (r *PostRepo) UpdatePost(ctx context.Context, postId int64, updateTitle str
 
 	//返回受影响的行数和error
 	return res.RowsAffected, res.Error
+}
+
+// ShowByTitleLikeOffset 标题模糊查询并分页
+func (r *PostRepo) ShowTitleLikeOffset(ctx context.Context, postTitle string, page int, pageSize int) ([]*domain.Post, int64, error) {
+
+	var list []*domain.Post
+	var total int64
+
+	// WithContext 返回绑定了ctx的新*gorm.DB实例，监听取消/超时信号
+	// Model 指定操作 domain.Post, GORM自动映射posts表，自动追加deleted_at IS NULL(软删除过滤)
+	db := r.db.WithContext(ctx).Model(&domain.Post{}).Preload("Author")
+	postTitle = Escape(postTitle)
+	db = db.Where("title LIKE ?", "%"+postTitle+"%")
+
+	// Count 调用并执行拼好的Where条件，获取查到的个数
+	// 执行完后db上的Where条件依然保留
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 链式叠加，追加排序，分页，查询
+	// Find查不到会返回空切片
+	err := db.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&list).Error
+
+	return list, total, err
+
+}
+
+// ShowByKeyWordOffset 关键词模糊查询
+func (r *PostRepo) ShowByKeyWordOffset(ctx context.Context, keyWord string, page int, pageSize int) ([]*domain.Post, int64, error) {
+	var list []*domain.Post
+	var total int64
+
+	//repo只做安全兜底，Limit不能接收负数
+	if pageSize < 0 {
+		pageSize = 0
+	}
+
+	//新建gorm链
+	db := r.db.WithContext(ctx).Model(&domain.Post{}).Preload("Author")
+
+	//拼接查询条件,无keyword执行全域查询
+	if keyWord != "" {
+		kw := Escape(keyWord)
+		db = db.Where("title LIKE ? OR content LIKE ?", "%"+kw+"%", "%"+kw+"%")
+	}
+
+	//统计总条数
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	//分页查询，顺序排序，偏移
+	offset := (page - 1) * pageSize
+	//MySQL 遇到 offset 越过数据集直接返回空结果,
+	err := db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&list).Error
+	if err != nil {
+		return []*domain.Post{}, 0, err
+	}
+
+	return list, total, nil
 }

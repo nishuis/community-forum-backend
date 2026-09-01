@@ -13,7 +13,7 @@ type Post struct {
 	DeletedAt gorm.DeletedAt `gorm:"index;comment:'删除时间'"`
 
 	AuthorID int64 `gorm:"type:BIGINT UNSIGNED;not null;index;comment:'作者ID,关联user.ID'"`
-	Author   User  `gorm:"foreignKey:AuthorID"`
+	Author   *User `gorm:"foreignKey:AuthorID"`
 	//CategoryID uint     `gorm:"type:BIGINT UNSIGNED;index:idx_posts_category_id;comment:'板块类型'"`
 	//Category   Category `gorm:"foreignKey:CategoryID"`
 

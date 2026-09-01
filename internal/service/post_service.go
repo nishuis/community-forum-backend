@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/domain"
@@ -96,4 +97,31 @@ func (s *PostService) UpdatePost(ctx context.Context, userId int64, postId int64
 		return errs.ErrPostNotExist
 	}
 	return nil
+}
+
+// ShowByKeyWordOffset 关键词模糊搜索
+func (s *PostService) ShowByKeyWordOffset(ctx context.Context, keyWord string, page int, pageSize int) ([]*domain.Post, int64, error) {
+	//1.校正参数
+	const maxPageSize = 50
+	if pageSize <= 0 || pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+	if page < 1 {
+		page = 1
+	}
+	//剔除开头结尾空格
+	keyWord = strings.TrimSpace(keyWord)
+
+	//2.调用repo
+	list, total, err := s.postRepo.ShowByKeyWordOffset(ctx, keyWord, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	//3.校验offset是否超限,即有没有查到有效数据
+	offset := (page - 1) * pageSize
+	if int64(offset) > total {
+		return []*domain.Post{}, total, nil
+	}
+	return list, total, nil
 }

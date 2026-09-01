@@ -11,3 +11,10 @@ type UpdatePostReq struct {
 	UpdateTitle   string `json:"update_title"`
 	UpdateContent string `json:"update_content"`
 }
+
+// ShowByKeyWordOffsetReq 分页关键词模糊查找
+type ShowByKeyWordOffsetReq struct {
+	KeyWord  string `json:"key_word" binding:"required"`
+	Page     int    `json:"page"`
+	PageSize int    `json:"page_size"`
+}
