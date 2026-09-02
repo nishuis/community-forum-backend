@@ -107,6 +107,48 @@ func (s *PostService) UpdatePost(ctx context.Context, userId int64, postId int64
 	return nil
 }
 
+// GetPostById 获取单条帖子业务
+func (s *PostService) GetPostById(ctx context.Context, postId int64) (*domain.Post, error) {
+	post, err := s.postRepo.FindPostById(ctx, postId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrPostNotExist
+		}
+		return nil, err
+	}
+	return post, nil
+}
+
+// GetPostByAuthorId 获取某用户全部帖子
+func (s *PostService) GetPostByAuthorId(ctx context.Context, authorId int64) ([]*domain.Post, error) {
+	// 校验用户是否存在
+	_, err := s.userRepo.FindUserByUserId(ctx, authorId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrUserNotFound
+		}
+		return nil, err
+	}
+	list, err := s.postRepo.FindPostByAuthorId(ctx, authorId)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// GetPostByTitleExact 精确标题查询帖子
+func (s *PostService) GetPostByTitleExact(ctx context.Context, postTitle string) ([]*domain.Post, error) {
+	postTitle = strings.TrimSpace(postTitle)
+	if postTitle == "" {
+		return nil, errs.ErrParamWrong
+	}
+	list, err := s.postRepo.FindPostByTitle(ctx, postTitle)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
 // ShowByKeyWordOffset 关键词模糊搜索
 func (s *PostService) ShowByKeyWordOffset(ctx context.Context, keyWord string, page int, pageSize int) ([]*domain.Post, int64, error) {
 	//1.校正参数
@@ -119,6 +161,10 @@ func (s *PostService) ShowByKeyWordOffset(ctx context.Context, keyWord string, p
 	}
 	//剔除开头结尾空格
 	keyWord = strings.TrimSpace(keyWord)
+	// 关键词长度保护，防止超长搜索拖慢数据库
+	if len(keyWord) > 50 {
+		return nil, 0, errs.ErrParamWrong
+	}
 
 	//2.调用repo
 	list, total, err := s.postRepo.ShowByKeyWordOffset(ctx, keyWord, page, pageSize)

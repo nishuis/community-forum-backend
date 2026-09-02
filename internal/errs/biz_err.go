@@ -6,6 +6,8 @@ import (
 
 // 业务错误
 var (
+	//user错误
+	ErrUserIdZero      = errors.New("用户ID不能为0")
 	ErrUserNotFound    = errors.New("用户不存在")
 	ErrPasswordWrong   = errors.New("密码错误")
 	ErrUsernameExisted = errors.New("用户名已存在")

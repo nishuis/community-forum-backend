@@ -26,3 +26,10 @@ type GetCurrentUserResp struct {
 	Nickname string `json:"nick_name"`
 	Avatar   string `json:"avatar"`
 }
+
+// UserItemResp 标准公开用户单元响应，帖子/评论作者展示，脱敏，不含密码、邮箱
+type UserItemResp struct {
+	UserId   int64  `json:"user_id"`
+	Username string `json:"username"`
+	Avatar   string `json:"avatar"`
+}

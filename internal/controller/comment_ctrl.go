@@ -152,7 +152,7 @@ func (c *CommentController) DeleteComment(ginctx *gin.Context) {
 }
 
 // UpdateComment 编辑评论 POST /api/comment/update
-func (c *CommentController) EUpdateComment(ginctx *gin.Context) {
+func (c *CommentController) UpdateComment(ginctx *gin.Context) {
 	// 1.获取登录用户
 	val, ok := ginctx.Get("userId")
 	if !ok {
@@ -268,14 +268,14 @@ func (c *CommentController) GetCommentList(ginctx *gin.Context) {
 	}
 
 	// po转dto
-	itemList := make([]*response.CommentItem, 0, len(list))
+	itemList := make([]*response.CommentItemResp, 0, len(list))
 	for _, po := range list {
 		itemList = append(itemList, convert.ConvertCommentItem(po))
 	}
 
 	totalPage := (total + int64(pageSize) - 1) / int64(pageSize)
 
-	resp := response.OffsetPageResp[*response.CommentItem]{
+	resp := response.OffsetPageResp[*response.CommentItemResp]{
 		List:      itemList,
 		Total:     total,
 		Page:      page,

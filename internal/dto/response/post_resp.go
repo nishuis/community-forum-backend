@@ -6,8 +6,8 @@ type CreatePostResp struct {
 	Title  string `json:"title"`
 }
 
-// PostListItem 帖子列表每一项返回结构
-type PostListItem struct {
+// PostItemResp 帖子返回单元
+type PostItemResp struct {
 	PostID    int64  `json:"post_id"`
 	UserID    int64  `json:"user_id"`
 	Username  string `json:"username"`

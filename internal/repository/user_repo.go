@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/nishuis/community-forum-backend/internal/domain"
+	"github.com/nishuis/community-forum-backend/internal/errs"
 	"gorm.io/gorm"
 )
 
@@ -57,4 +58,17 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *domain.User) error {
 	// db.Create: gorm 提供的插入方法，传入模型指针，自动提取结构体字段生成INSERT SQL
 	err := r.db.WithContext(ctx).Create(user).Error
 	return err
+}
+
+// UpdateUser 更新用户信息
+func (r *UserRepo) UpdateUser(ctx context.Context, user *domain.User) error {
+	return r.db.WithContext(ctx).Save(user).Error
+}
+
+// DeleteUser 根据用户id物理删除用户
+func (r *UserRepo) DeleteUser(ctx context.Context, userId int64) error {
+	if userId == 0 {
+		return errs.ErrUserIdZero
+	}
+	return r.db.WithContext(ctx).Where("user_id = ?", userId).Delete(&domain.User{}).Error
 }

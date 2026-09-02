@@ -267,8 +267,8 @@ func (c *PostController) UpdatePost(ginctx *gin.Context) {
 	})
 }
 
-// ShowByKeyWordOffset 关键词查询帖子并分页 GET请求
-func (c *PostController) ShowByKeyWordOffset(ginctx *gin.Context) {
+// GetPostByKeyWordOffset 关键词查询帖子并分页 GET请求
+func (c *PostController) GetPostByKeyWordOffset(ginctx *gin.Context) {
 	//开放接口，无需鉴权
 
 	//1.获取参数
@@ -306,9 +306,9 @@ func (c *PostController) ShowByKeyWordOffset(ginctx *gin.Context) {
 	//计算总页数
 	totalPage := (total + int64(req.PageSize) - 1) / int64(req.PageSize)
 	//[]*domain.Post 转 []*response.PostListItem
-	postList := convert.ConvertPostListItemList(posts)
+	postList := convert.ConvertPostItemList(posts)
 	//绑定通用分页返回结构体
-	resp := response.OffsetPageResp[*response.PostListItem]{
+	resp := response.OffsetPageResp[*response.PostItemResp]{
 		List:      postList,
 		Total:     total,
 		Page:      req.Page,
@@ -322,4 +322,98 @@ func (c *PostController) ShowByKeyWordOffset(ginctx *gin.Context) {
 		"data": resp,
 	})
 
+}
+
+// GetPostByPostId 获取帖子详情 GET 公开接口
+func (c *PostController) GetPostByPostId(ginctx *gin.Context) {
+	//1.获取路径参数post_id
+	postIdStr := ginctx.Param("post_id")
+	postId, err := strconv.ParseInt(postIdStr, 10, 64)
+	if err != nil {
+		log.Printf("post_id 参数错误: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeParamError,
+			"msg":  "post_id 参数格式错误",
+		})
+		return
+	}
+
+	//2.调用service
+	ctx := ginctx.Request.Context()
+	post, err := c.postService.GetPostById(ctx, postId)
+	if err != nil {
+		//处理context取消/超时
+		handle := ginutil.HandleContextError(ginctx, err, "GetPostDetail")
+		if handle {
+			return
+		}
+		switch {
+		case errors.Is(err, errs.ErrPostNotExist):
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodePostNotExist,
+				"msg":  "内容不存在",
+			})
+		default:
+			log.Printf("GetPostDetail 业务错误：%v", err)
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeServerInternal,
+				"msg":  "服务器内部错误",
+			})
+		}
+		return
+	}
+
+	//3.domain转response
+	respData := convert.ConvertPostItem(post)
+	ginctx.JSON(http.StatusOK, gin.H{
+		"code": errs.CodeOK,
+		"msg":  "查询成功",
+		"data": respData,
+	})
+}
+
+// GetAuthorPostList 获取某个用户发布的帖子列表 GET 公开接口
+func (c *PostController) GetAuthorPostList(ginctx *gin.Context) {
+	//1.路径参数 author_id
+	authorIdStr := ginctx.Param("author_id")
+	authorId, err := strconv.ParseInt(authorIdStr, 10, 64)
+	if err != nil {
+		log.Printf("author_id 参数错误: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeParamError,
+			"msg":  "author_id 参数格式错误",
+		})
+		return
+	}
+
+	ctx := ginctx.Request.Context()
+	postList, err := c.postService.GetPostByAuthorId(ctx, authorId)
+	if err != nil {
+		handle := ginutil.HandleContextError(ginctx, err, "GetAuthorPostList")
+		if handle {
+			return
+		}
+		switch {
+		case errors.Is(err, errs.ErrUserNotFound):
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeUserNotExist,
+				"msg":  "用户不存在",
+			})
+		default:
+			log.Printf("GetAuthorPostList 业务错误：%v", err)
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeServerInternal,
+				"msg":  "服务器内部错误",
+			})
+		}
+		return
+	}
+
+	//domain 转响应结构体
+	listResp := convert.ConvertPostItemList(postList)
+	ginctx.JSON(http.StatusOK, gin.H{
+		"code": errs.CodeOK,
+		"msg":  "查询成功",
+		"data": listResp,
+	})
 }

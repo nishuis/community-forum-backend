@@ -7,10 +7,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nishuis/community-forum-backend/internal/dto/convert"
 	"github.com/nishuis/community-forum-backend/internal/dto/request"
 	"github.com/nishuis/community-forum-backend/internal/dto/response"
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"github.com/nishuis/community-forum-backend/internal/service"
+	ginutil "github.com/nishuis/community-forum-backend/pkg/gin_util"
 )
 
 /*
@@ -31,8 +33,7 @@ func NewUserController(userService *service.UserService) *UserController {
 	return &UserController{userService: userService}
 }
 
-// Register 用户注册接口
-// POST
+// Register 用户注册接口 POST
 func (uc *UserController) Register(ginctx *gin.Context) {
 	//1.声明请求结构体，接收前端JSON，结构体来自dto/request
 	var req request.RegisterReq
@@ -120,8 +121,94 @@ func (uc *UserController) Register(ginctx *gin.Context) {
 
 }
 
-// GetMessageController 获取用户信息
-func (uc *UserController) GetMessageController(ginctx *gin.Context) {
+// DeleteUser 注销账号 DELETE
+func (uc *UserController) DeleteUser(ginctx *gin.Context) {
+	//1.获取用户信息
+	userId, _, ok := ginutil.GetCurrentUserInfo(ginctx)
+	if !ok {
+		return
+	}
+
+	//2.调用服务，处理错误
+	ctx := ginctx.Request.Context()
+	err := uc.userService.DeleteUser(ctx, userId)
+	if err != nil {
+		if ginutil.HandleContextError(ginctx, err, "DeleteUser") {
+			return
+		}
+		if errors.Is(err, errs.ErrUserNotFound) {
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeUserNotExist,
+				"msg":  "用户不存在",
+			})
+			return
+		}
+		log.Printf("DeleteUser err: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeServerInternal,
+			"msg":  "服务器内部错误",
+		})
+		return
+	}
+
+	//3.响应成功
+	ginctx.JSON(http.StatusOK, gin.H{
+		"code": errs.CodeDeleted,
+		"msg":  "账号注销成功",
+	})
+}
+
+// UpdateUserInfo 修改用户基础信息 PUT
+func (uc *UserController) UpdateUserInfo(ginctx *gin.Context) {
+	//1.获取用户信息
+	userId, _, ok := ginutil.GetCurrentUserInfo(ginctx)
+	if !ok {
+		return
+	}
+
+	//2.获取请求信息
+	var req request.UpdateUserInfoReq
+	if err := ginctx.ShouldBindJSON(&req); err != nil {
+		log.Printf("UpdateUserInfo bind error: %v", err)
+		ginctx.JSON(http.StatusOK, gin.H{
+			"code": errs.CodeParamError,
+			"msg":  "请求参数错误",
+		})
+		return
+	}
+
+	//3.调用服务，处理错误
+	ctx := ginctx.Request.Context()
+	user, err := uc.userService.UpdateUserInfo(ctx, userId, req.Username, req.Email)
+	if err != nil {
+		if ginutil.HandleContextError(ginctx, err, "UpdateUserInfo") {
+			return
+		}
+		switch {
+		case errors.Is(err, errs.ErrUserNotFound):
+			ginctx.JSON(http.StatusOK, gin.H{"code": errs.CodeUserNotExist, "msg": "用户不存在"})
+		case errors.Is(err, errs.ErrUsernameExisted):
+			ginctx.JSON(http.StatusOK, gin.H{"code": errs.CodeParamError, "msg": "用户名已存在"})
+		case errors.Is(err, errs.ErrEmailExisted):
+			ginctx.JSON(http.StatusOK, gin.H{"code": errs.CodeParamError, "msg": "邮箱已存在"})
+		default:
+			log.Printf("UpdateUserInfo err: %v", err)
+			ginctx.JSON(http.StatusOK, gin.H{"code": errs.CodeServerInternal, "msg": "服务器内部错误"})
+		}
+		return
+	}
+
+	//4.绑定返回体，响应成功
+	resp := convert.ConvertGetCurrentUserResp(user)
+	ginctx.JSON(http.StatusOK, gin.H{
+		"code": errs.CodeOK,
+		"msg":  "更新成功",
+		"data": resp,
+	})
+}
+
+// GetCurrentUser 获取用户信息 GET
+func (uc *UserController) GetCurrentUser(ginctx *gin.Context) {
 	//1.获取userID
 	val, ok := ginctx.Get("userId")
 	if !ok {
@@ -180,13 +267,7 @@ func (uc *UserController) GetMessageController(ginctx *gin.Context) {
 
 	//3.domain 转换response DTO,屏蔽password敏感字段
 	//domain.User包含加密Password,不能传给前端
-	resp := response.GetCurrentUserResp{
-		UserID:   user.UserId,
-		Username: user.Username,
-		Email:    user.Email,
-		Nickname: user.Nickname,
-		Avatar:   user.Avatar,
-	}
+	resp := convert.ConvertGetCurrentUserResp(user)
 
 	//4.业务完成，返回前端
 	ginctx.JSON(http.StatusOK, gin.H{

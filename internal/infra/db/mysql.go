@@ -21,7 +21,7 @@ func InitDB(cfg *configs.Config) (*gorm.DB, error) {
 
 	//自动迁移建表
 	err = db.AutoMigrate(&domain.User{},
-		&domain.Post{})
+		&domain.Post{}, &domain.Comment{}, &domain.Like{})
 	if err != nil {
 		return nil, err
 	}

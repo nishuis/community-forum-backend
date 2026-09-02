@@ -1,7 +1,7 @@
 package response
 
 // CommentItem 评论项返回
-type CommentItem struct {
+type CommentItemResp struct {
 	CommentID       int64  `json:"comment_id"`
 	PostID          int64  `json:"post_id"`
 	ParentCommentID int64  `json:"parent_comment_id"`

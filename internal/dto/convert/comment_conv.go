@@ -6,8 +6,8 @@ import (
 )
 
 // ConvertCommentItem 实体转响应单元domain.Comment -> response.CommentItem
-func ConvertCommentItem(po *domain.Comment) *response.CommentItem {
-	item := &response.CommentItem{
+func ConvertCommentItem(po *domain.Comment) *response.CommentItemResp {
+	item := &response.CommentItemResp{
 		CommentID:       po.CommentID,
 		PostID:          po.PostID,
 		ParentCommentID: po.ParentCommentID,
@@ -28,20 +28,23 @@ func ConvertCommentItem(po *domain.Comment) *response.CommentItem {
 }
 
 // ConvertCommentItemList 实体列表转响应单元列表[]*domain.Comment -> []*response.CommentItem
-func ConvertCommentItemList(pos []*domain.Comment) []*response.CommentItem {
+func ConvertCommentItemList(pos []*domain.Comment) []*response.CommentItemResp {
 	if pos == nil {
-		return []*response.CommentItem{}
+		return []*response.CommentItemResp{}
 	}
 
-	res := make([]*response.CommentItem, 0, len(pos))
+	res := make([]*response.CommentItemResp, 0, len(pos))
 	for _, v := range pos {
+		if v == nil {
+			continue
+		}
 		res = append(res, ConvertCommentItem(v))
 	}
 
 	return res
 }
 
-// ConvertCreateCommentResp 创建评论返回
+// ConvertCreateCommentResp 转换评论返回
 func ConvertCreateCommentResp(po *domain.Comment) *response.CreateCommentResp {
 	return &response.CreateCommentResp{
 		CommentID:       po.CommentID,

@@ -2,8 +2,6 @@ package domain
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // Like 点赞 帖子点赞、评论点赞
@@ -15,9 +13,9 @@ type Like struct {
 	TargetType int8  `gorm:"type:TINYINT;not null;index:uk_user_target,unique:uk_user_target;comment:'点赞对象类型：1‑帖子post，2‑评论comment'"`
 	TargetID   int64 `gorm:"type:BIGINT UNSIGNED;not null;index:uk_user_target,unique:uk_user_target;comment:'目标ID，post_id或者comment_id'"`
 
-	CreatedAt time.Time      `gorm:"comment:'点赞时间'"`
-	UpdatedAt time.Time      `gorm:"comment:'更新时间'"`
-	DeletedAt gorm.DeletedAt `gorm:"index;comment:'软删除，取消点赞标记删除'"`
+	CreatedAt time.Time `gorm:"comment:'点赞时间'"`
+	UpdatedAt time.Time `gorm:"comment:'更新时间'"`
+	//DeletedAt gorm.DeletedAt 直接物理删除，不软删除
 }
 
 const (

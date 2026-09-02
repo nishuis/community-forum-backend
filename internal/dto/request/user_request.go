@@ -23,3 +23,9 @@ type RefreshTokenReqt struct {
 type GetMessageReq struct {
 	Username string `json:"username" binding:"required"`
 }
+
+// UpdateUserInfoReq 更新用户信息请求
+type UpdateUserInfoReq struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}

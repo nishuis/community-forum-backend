@@ -86,3 +86,58 @@ func (s *UserService) GetCurrentUser(ctx context.Context, userId int64) (*domain
 	//2.返回用户
 	return user, nil
 }
+
+// UpdateUserInfo 更新用户基础信息（不处理密码修改）
+func (s *UserService) UpdateUserInfo(ctx context.Context, userId int64, username string, email string) (*domain.User, error) {
+	// 查询原用户
+	user, err := s.userRepo.FindUserByUserId(ctx, userId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	// 如果传入新用户名，校验是否被别人占用
+	if username != "" && username != user.Username {
+		_, err := s.userRepo.FindUserByUsername(ctx, username)
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, err
+			}
+		} else {
+			return nil, errs.ErrUsernameExisted
+		}
+		user.Username = username
+	}
+	// 如果传入新邮箱，校验是否被别人占用
+	if email != "" && email != user.Email {
+		_, err := s.userRepo.FindUserByEmail(ctx, email)
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, err
+			}
+		} else {
+			return nil, errs.ErrEmailExisted
+		}
+		user.Email = email
+	}
+
+	err = s.userRepo.UpdateUser(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+// DeleteUser 删除自己账号
+func (s *UserService) DeleteUser(ctx context.Context, userId int64) error {
+	_, err := s.userRepo.FindUserByUserId(ctx, userId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errs.ErrUserNotFound
+		}
+		return err
+	}
+	return s.userRepo.DeleteUser(ctx, userId)
+}

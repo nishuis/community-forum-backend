@@ -41,41 +41,74 @@ func main() {
 	//repo
 	userRepo := repository.NewUserRepo(db)
 	postRepo := repository.NewPostRepo(db)
+	commentRepo := repository.NewCommentRepo(db)
+	likeRepo := repository.NewLikeRepo(db)
 	//service
 	userService := service.NewUserService(userRepo, cfg)
 	authService := service.NewAuthService(userRepo, cfg)
 	postService := service.NewPostService(postRepo, userRepo, cfg)
+	commentService := service.NewCommentService(commentRepo, postRepo)
+	likeService := service.NewLikeService(likeRepo, postRepo, commentRepo)
 	//controller
 	userCtrl := controller.NewUserController(userService)
 	authCtrl := controller.NewAuthController(authService)
 	postCtrl := controller.NewPostController(postService)
+	commentCtrl := controller.NewCommentController(commentService)
+	likeCtrl := controller.NewLikeController(likeService, cfg)
 
-	//4.初始化Gin，组装依赖链
+	//4.初始化Gin
 	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		c.String(200, "hello ok")
-	})
 
 	//5.路由分组
-	//公开接口组
-	publicGroup := r.Group("/api")
+	apiGroup := r.Group("/api/v1")
 	{
-		//注册接口 POST /apiregister
-		publicGroup.POST("/register", userCtrl.Register)
+		//公开接口组(含可选鉴权)
+		publicGroup := apiGroup.Group("")
+		{
+			//用户注册、登录
+			publicGroup.POST("/users/login", userCtrl.Register)
+			publicGroup.POST("/auth/register", authCtrl.Login)
 
-		//登录接口 POST /apilogin
-		publicGroup.POST("/login", authCtrl.Login)
+			//帖子公开查询
+			publicGroup.GET("/posts/:post_id", postCtrl.GetPostByPostId)
+			publicGroup.GET("/posts/:author_id/posts", postCtrl.GetAuthorPostList)
+			publicGroup.GET("/posts/search", postCtrl.GetPostByKeyWordOffset)
+
+			//获取点赞状态
+			publicGroup.GET("like/status", likeCtrl.GetLikeStatus)
+
+			//获取评论列表
+			publicGroup.GET("/post/:post__id/comments", commentCtrl.GetCommentList)
+		}
+
+		//需鉴权接口组
+		authGroup := apiGroup.Group("")
+		{
+			//挂载中间件
+			authGroup.Use(middleware.JWTAuth(cfg))
+
+			//获取用户信息,更新用户信息，删除用户
+			authGroup.GET("/users/me", userCtrl.GetCurrentUser)
+			authGroup.PUT("/users/me", userCtrl.UpdateUserInfo)
+			authGroup.DELETE("/user/me", userCtrl.DeleteUser)
+
+			//发帖,删帖，更新帖子
+			authGroup.POST("/posts", postCtrl.CreatePost)
+			authGroup.DELETE("/posts/:post_id", postCtrl.DeletePost)
+			authGroup.PUT("/posts/post_id", postCtrl.UpdatePost)
+
+			//发评论，删评论，编辑评论
+			authGroup.POST("/comment/create", commentCtrl.CreateComment)
+			authGroup.DELETE("/comment/:comment_id", commentCtrl.DeleteComment)
+			authGroup.PUT("/comment/update", commentCtrl.UpdateComment)
+
+			//点赞，取消点赞，获取点赞记录
+			authGroup.POST("/like/do", likeCtrl.DoLike)
+			authGroup.POST("/like/cancel", likeCtrl.CancelLike)
+			authGroup.GET("/like/me", likeCtrl.GetMyLiked)
+
+		}
 	}
-	//需鉴权接口组
-	authGroup := r.Group("/api")
-	authGroup.Use(middleware.JWTAuth(cfg))
-	{
-		authGroup.GET("/me", userCtrl.GetMessageController)
-
-		//发帖
-		authGroup.POST("/create_post", postCtrl.CreatePost)
-	}
-
 	//6.启动web，监听本地8080端口
 	err = r.Run(fmt.Sprint(":", cfg.Server.Port))
 	if err != nil {

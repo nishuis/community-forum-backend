@@ -240,7 +240,7 @@ func (c *LikeController) GetMyLiked(ginctx *gin.Context) {
 	itemList := convert.ConvertUserLikedItemList(list)
 	totalPage := (total + int64(pageSize) - 1) / int64(pageSize)
 
-	resp := response.OffsetPageResp[*response.UserLikedItem]{
+	resp := response.OffsetPageResp[*response.UserLikedItemResp]{
 		List:      itemList,
 		Total:     total,
 		Page:      page,
