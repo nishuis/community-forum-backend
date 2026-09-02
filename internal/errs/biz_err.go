@@ -18,6 +18,14 @@ var (
 	ErrPostIdZero       = errors.New("postId can not be 0")
 	ErrPostNotAuthor    = errors.New("not author")
 	ErrPostNotExist     = errors.New("post not exist")
+
+	//Comment错误
+	ErrCommentContentEmpty        = errors.New("comment content can not be empty")
+	ErrCommentContentTooLong      = errors.New("content too long")
+	ErrParentCommentNotExist      = errors.New("comment not exists")
+	ErrParentCommentNotBelongPost = errors.New("comment not belong post")
+	ErrCommentNotFound            = errors.New("comment not found")
+	ErrCommentNotAuthor           = errors.New("not the author")
 )
 
 // 响应码
