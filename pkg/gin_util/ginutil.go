@@ -5,9 +5,12 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/errs"
+	jwtutil "github.com/nishuis/community-forum-backend/pkg/jwt_util"
 )
 
 // GetCurrentUserInfo 获取当前登录用户 userId username
@@ -80,4 +83,29 @@ func HandleContextError(c *gin.Context, err error, logMsg string) bool {
 		return true
 	}
 	return false
+}
+
+// TryGetUserIdFromHeader 可选鉴权：尝试从header解析userId
+// 返回 userId=0 代表未登录 / token无效；不会c.Abort，不会中断请求
+func TryGetUserIdFromHeader(c *gin.Context, cfg *configs.Config) int64 {
+	//1.尝试获取请求头
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		return 0
+	}
+
+	//2.尝试获取token
+	parts := strings.SplitN(authHeader, " ", 2)
+	if !(len(parts) == 2 && strings.EqualFold(parts[0], "Bearer")) {
+		return 0
+	}
+	tokenStr := parts[1]
+
+	//3.解析token
+	claims, err := jwtutil.ParseToken(tokenStr, cfg.Jwt.Secret)
+	if err != nil {
+		log.Printf("TryGetUserIdFromHeader parse token fail: %v", err)
+		return 0
+	}
+	return claims.UserId
 }

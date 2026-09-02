@@ -27,6 +27,14 @@ func (r *CommentRepo) DeleteComment(ctx context.Context, commentId int64) error 
 		Delete(&domain.Comment{}).Error
 }
 
+// UpdateCommentContent 更新评论内容
+func (r *CommentRepo) UpdateCommentContent(ctx context.Context, commentId int64, content string) error {
+	return r.db.WithContext(ctx).
+		Model(&domain.Comment{}).
+		Where("comment_id = ?", commentId).
+		Update("content", content).Error
+}
+
 // FindCommentByID 根据评论ID查询单条评论，预加载作者Author
 // gorm.ErrRecordNotFound 评论不存在
 func (r *CommentRepo) FindCommentByID(ctx context.Context, commentId int64) (*domain.Comment, error) {

@@ -5,7 +5,7 @@ import (
 	"github.com/nishuis/community-forum-backend/internal/dto/response"
 )
 
-// ConvertCommentItem domain.Comment -> response.CommentItem
+// ConvertCommentItem 实体转响应单元domain.Comment -> response.CommentItem
 func ConvertCommentItem(po *domain.Comment) *response.CommentItem {
 	item := &response.CommentItem{
 		CommentID:       po.CommentID,
@@ -27,7 +27,7 @@ func ConvertCommentItem(po *domain.Comment) *response.CommentItem {
 	return item
 }
 
-// ConvertCommentItemList []*domain.Comment -> []*response.CommentItem
+// ConvertCommentItemList 实体列表转响应单元列表[]*domain.Comment -> []*response.CommentItem
 func ConvertCommentItemList(pos []*domain.Comment) []*response.CommentItem {
 	if pos == nil {
 		return []*response.CommentItem{}
