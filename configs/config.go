@@ -35,6 +35,7 @@ type Config struct {
 	} `yaml:"log"`
 
 	Redis struct {
+		Enable       bool   `yaml:"enable"` // 缓存总开关，false 时全部走 DB
 		Host         string `yaml:"host"`
 		Port         int    `yaml:"port"`
 		Password     string `yaml:"password"`
