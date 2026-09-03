@@ -29,6 +29,11 @@ type Config struct {
 		Port int `yaml:"port"`
 	} `yaml:"server"`
 
+	Log struct {
+		Level  string `yaml:"level"`  // debug / info / warn / error，默认 info
+		Output string `yaml:"output"` // stdout 或日志文件路径，默认 stdout
+	} `yaml:"log"`
+
 	Redis struct {
 		Host         string `yaml:"host"`
 		Port         int    `yaml:"port"`

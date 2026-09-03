@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/controller"
 	"github.com/nishuis/community-forum-backend/internal/infra/db"
+	infralog "github.com/nishuis/community-forum-backend/internal/infra/log"
 	"github.com/nishuis/community-forum-backend/internal/middleware"
 	"github.com/nishuis/community-forum-backend/internal/repository"
 	"github.com/nishuis/community-forum-backend/internal/service"
@@ -18,6 +20,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	//1.1 初始化全局日志（slog，JSON结构化输出）
+	if err := infralog.InitLogger(cfg); err != nil {
+		panic(err)
+	}
+	slog.Info("配置加载完成")
+
 	// 校验JWT配置
 	jwtCfg := cfg.Jwt
 	if jwtCfg.Secret == "" {
@@ -35,7 +44,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("初始化完成")
+	slog.Info("数据库初始化完成")
 
 	//3.组装依赖链
 	//repo
