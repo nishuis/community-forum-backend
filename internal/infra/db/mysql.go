@@ -3,6 +3,7 @@ package db
 import (
 	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/domain"
+	infralog "github.com/nishuis/community-forum-backend/internal/infra/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -15,7 +16,8 @@ func InitDB(cfg *configs.Config) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		//驱动错误转gorm哨兵错误
 		TranslateError: true,
-		Logger:         logger.Default.LogMode(logger.Warn),
+		//自定义slog日志适配器：慢查询阈值100ms，出错/慢查询才记录
+		Logger: infralog.NewGormLogger(logger.Warn, infralog.SlowThreshold),
 	})
 	if err != nil {
 		return nil, err
