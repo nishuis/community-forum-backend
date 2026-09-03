@@ -6,9 +6,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nishuis/community-forum-backend/configs"
+	"github.com/nishuis/community-forum-backend/internal/cache"
 	"github.com/nishuis/community-forum-backend/internal/controller"
 	"github.com/nishuis/community-forum-backend/internal/infra/db"
 	infralog "github.com/nishuis/community-forum-backend/internal/infra/log"
+	"github.com/nishuis/community-forum-backend/internal/infra/redis"
 	"github.com/nishuis/community-forum-backend/internal/middleware"
 	"github.com/nishuis/community-forum-backend/internal/repository"
 	"github.com/nishuis/community-forum-backend/internal/service"
@@ -46,6 +48,11 @@ func main() {
 	}
 	slog.Info("数据库初始化完成")
 
+	//2.1 初始化Redis缓存（fail-open：未启用或连接失败时返回nil，服务降级直连DB）
+	rdb := redis.InitRedis(cfg)
+	defer redis.CloseRedis(rdb)
+	cacheSvc := cache.NewCache(rdb)
+
 	//3.组装依赖链
 	//repo
 	userRepo := repository.NewUserRepo(db)
@@ -53,10 +60,10 @@ func main() {
 	commentRepo := repository.NewCommentRepo(db)
 	likeRepo := repository.NewLikeRepo(db)
 	//service
-	userService := service.NewUserService(userRepo, cfg, nil) // TODO 步骤8: 注入真实 cache
+	userService := service.NewUserService(userRepo, cfg, cacheSvc)
 	authService := service.NewAuthService(userRepo, cfg)
-	postService := service.NewPostService(postRepo, userRepo, cfg, nil) // TODO 步骤8: 注入真实 cache
-	commentService := service.NewCommentService(commentRepo, postRepo, nil) // TODO 步骤8: 注入真实 cache
+	postService := service.NewPostService(postRepo, userRepo, cfg, cacheSvc)
+	commentService := service.NewCommentService(commentRepo, postRepo, cacheSvc)
 	likeService := service.NewLikeService(likeRepo, postRepo, commentRepo)
 	//controller
 	userCtrl := controller.NewUserController(userService)
