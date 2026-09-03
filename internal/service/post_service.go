@@ -1,3 +1,4 @@
+// service/post_service.go —— 帖子业务层：发帖、删帖、编辑、查询与关键词搜索，校验标题规则与作者权限。
 package service
 
 import (

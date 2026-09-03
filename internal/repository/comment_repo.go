@@ -1,3 +1,4 @@
+// repository/comment_repo.go —— 评论数据访问层：封装 comments 表增删改查与分页查询。
 package repository
 
 import (
@@ -7,10 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// CommentRepo 评论数据仓库，持有 gorm.DB 实例，挂载评论表数据库方法。
 type CommentRepo struct {
 	db *gorm.DB
 }
 
+// NewCommentRepo 新建评论仓库实例。
 func NewCommentRepo(db *gorm.DB) *CommentRepo {
 	return &CommentRepo{db: db}
 }

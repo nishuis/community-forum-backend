@@ -1,3 +1,4 @@
+// controller/like_ctrl.go —— 点赞 HTTP 层：点赞、取消、我的点赞列表与点赞状态/数量接口。
 package controller
 
 import (
@@ -15,11 +16,13 @@ import (
 	ginutil "github.com/nishuis/community-forum-backend/pkg/gin_util"
 )
 
+// LikeController 点赞控制器，持有 likeService 与配置引用，只管 HTTP 层职责。
 type LikeController struct {
 	likeService *service.LikeService
 	cfg         *configs.Config
 }
 
+// NewLikeController 新建点赞控制器，service 与配置从外部注入。
 func NewLikeController(svc *service.LikeService, cfg *configs.Config) *LikeController {
 	return &LikeController{
 		likeService: svc,

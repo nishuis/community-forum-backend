@@ -1,3 +1,4 @@
+// controller/comment_ctrl.go —— 评论 HTTP 层：发表、删除、编辑评论与帖子评论分页列表接口。
 package controller
 
 import (
@@ -14,10 +15,12 @@ import (
 	ginutil "github.com/nishuis/community-forum-backend/pkg/gin_util"
 )
 
+// CommentController 评论控制器，持有 commentService 引用，只管 HTTP 层职责。
 type CommentController struct {
 	commentService *service.CommentService
 }
 
+// NewCommentController 新建评论控制器，service 从外部注入。
 func NewCommentController(svc *service.CommentService) *CommentController {
 	return &CommentController{commentService: svc}
 }

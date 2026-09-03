@@ -1,3 +1,4 @@
+// controller/user_ctrl.go —— 用户 HTTP 层：注册、查询、更新、注销用户资源，负责参数绑定与响应封装。
 package controller
 
 import (

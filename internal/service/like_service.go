@@ -1,3 +1,4 @@
+// service/like_service.go —— 点赞业务层：点赞、取消、查询状态与列表，处理重复点赞等业务错误。
 package service
 
 import (
@@ -10,12 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// LikeService 点赞业务结构体，依赖 LikeRepo/PostRepo/CommentRepo 注入。
 type LikeService struct {
 	likeRepo    *repository.LikeRepo
 	postRepo    *repository.PostRepo
 	commentRepo *repository.CommentRepo
 }
 
+// NewLikeService 新建点赞业务实例，外部注入 repo 依赖。
 func NewLikeService(likeRepo *repository.LikeRepo, postRepo *repository.PostRepo, commentRepo *repository.CommentRepo) *LikeService {
 	return &LikeService{
 		likeRepo:    likeRepo,

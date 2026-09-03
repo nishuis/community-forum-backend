@@ -1,3 +1,4 @@
+// controller/auth_controller.go —— 鉴权 HTTP 层：绑定登录请求参数、调用 authService、把业务错误映射为 JSON 响应。
 package controller
 
 import (

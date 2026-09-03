@@ -1,3 +1,4 @@
+// service/user_service.go —— 用户业务层：注册、查询、更新、注销用户，维护业务规则与业务错误映射。
 package service
 
 import (

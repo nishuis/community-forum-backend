@@ -1,3 +1,4 @@
+// repository/like_repo.go —— 点赞数据访问层：封装 likes 表与点赞计数的事务操作及查询。
 package repository
 
 import (
@@ -7,10 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// LikeRepo 点赞数据仓库，持有 gorm.DB 实例，挂载点赞表数据库方法。
 type LikeRepo struct {
 	db *gorm.DB
 }
 
+// NewLikeRepo 新建点赞仓库实例。
 func NewLikeRepo(db *gorm.DB) *LikeRepo {
 	return &LikeRepo{db: db}
 }

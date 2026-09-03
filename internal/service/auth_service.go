@@ -1,3 +1,4 @@
+// service/auth_service.go —— 鉴权业务层：校验用户名与密码、签发 access/refresh JWT 令牌。
 package service
 
 import (

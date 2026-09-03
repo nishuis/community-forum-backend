@@ -1,3 +1,4 @@
+// service/comment_service.go —— 评论业务层：发表、删除、编辑评论与分页查询，校验内容长度与作者权限。
 package service
 
 import (
@@ -10,11 +11,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// CommentService 评论业务结构体，依赖 CommentRepo/PostRepo 注入。
 type CommentService struct {
 	commentRepo *repository.CommentRepo
 	postRepo    *repository.PostRepo
 }
 
+// NewCommentService 新建评论业务实例，外部注入 repo 依赖。
 func NewCommentService(commentRepo *repository.CommentRepo, postRepo *repository.PostRepo) *CommentService {
 	return &CommentService{
 		commentRepo: commentRepo,

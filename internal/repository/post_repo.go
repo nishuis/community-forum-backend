@@ -1,3 +1,4 @@
+// repository/post_repo.go —— 帖子数据访问层：封装 posts 表读写、关键词模糊搜索与分页统计。
 package repository
 
 import (

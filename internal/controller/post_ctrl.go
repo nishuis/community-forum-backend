@@ -1,3 +1,4 @@
+// controller/post_ctrl.go —— 帖子 HTTP 层：发帖、删帖、编辑、详情、作者列表与关键词搜索接口。
 package controller
 
 import (

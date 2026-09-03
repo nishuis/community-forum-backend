@@ -1,3 +1,4 @@
+// repository/user_repo.go —— 用户数据访问层：封装 users 表增删改查与唯一索引冲突判定，向上抛 gorm 错误。
 package repository
 
 import (
