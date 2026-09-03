@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"errors"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/nishuis/community-forum-backend/internal/domain"
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"gorm.io/gorm"
@@ -33,6 +35,22 @@ func (r *UserRepo) FindUserByUsername(ctx context.Context, username string) (*do
 
 }
 
+// IsUniqueConstraintErr 判断是否唯一索引冲突
+// mysql 1062；postgres 23505
+func (r *UserRepo) IsUniqueConstraintErr(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// MySQL
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		return mysqlErr.Number == 1062
+	}
+
+	return false
+}
+
 // FindUserByEmail 根据邮箱查找用户
 func (r *UserRepo) FindUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
@@ -60,7 +78,15 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *domain.User) error {
 	return err
 }
 
-// UpdateUser 更新用户信息
+// UpdateUserByMap 根据userId，map精准局部更新字段，不会覆盖其他字段
+func (r *UserRepo) UpdateUserByMap(ctx context.Context, userId int64, updateMap map[string]interface{}) error {
+	return r.db.WithContext(ctx).
+		Model(&domain.User{}).
+		Where("id = ?", userId).
+		Updates(updateMap).Error
+}
+
+// UpdateUser 更新用户信息，全量save更新
 func (r *UserRepo) UpdateUser(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
 }

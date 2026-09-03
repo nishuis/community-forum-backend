@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/domain"
@@ -26,49 +27,33 @@ func NewUserService(userRepo *repository.UserRepo, conf *configs.Config) *UserSe
 
 // Register 注册业务
 func (s *UserService) Register(ctx context.Context, username string, password string, email string) (*domain.User, error) {
-	//1.校验用户名是否存在
-	_, err := s.userRepo.FindUserByUsername(ctx, username)
-	if err != nil {
-		//非“未找到”错误：数据库、context异常，直接上抛
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
-		}
-	} else {
-		// err为nil说明查询正常，并且查到用户，用户名重复
-		return nil, errs.ErrUsernameExisted
-	}
-
-	//2.校验邮箱是否存在
-	_, err = s.userRepo.FindUserByEmail(ctx, email)
-	if err != nil {
-		//数据库查询或Context出错，上抛到controller层
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
-		}
-	} else {
-		return nil, errs.ErrEmailExisted
-	}
-	//err not nil 且是ErrRecordNotFound，数据库查询成功但未找到用户，即用户名不存在，继续注册service
-
-	//3.加密明文密码
+	//1.加密明文密码
 	hsahPwdBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	//4.组装domain.User模型
-	newUser := &domain.User{Username: username,
+	//2.组装domain.User模型
+	newUser := &domain.User{
+		Username: username,
 		Password: string(hsahPwdBytes),
 		Email:    email,
 	}
 
-	//5.调用repo，插入数据库，service不写gorm语句
+	//3.调用repo，插入数据库，service不写gorm语句
 	err = s.userRepo.CreateUser(ctx, newUser)
 	if err != nil {
+		if s.userRepo.IsUniqueConstraintErr(err) {
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "username") {
+				return nil, errs.ErrUsernameExisted
+			}
+			if strings.Contains(errMsg, "email") {
+				return nil, errs.ErrEmailExisted
+			}
+		}
 		return nil, err
 	}
-
-	//6.返回用户模型
 	return newUser, nil
 }
 
@@ -98,6 +83,8 @@ func (s *UserService) UpdateUserInfo(ctx context.Context, userId int64, username
 		return nil, err
 	}
 
+	updateMap := make(map[string]interface{})
+
 	// 如果传入新用户名，校验是否被别人占用
 	if username != "" && username != user.Username {
 		_, err := s.userRepo.FindUserByUsername(ctx, username)
@@ -108,7 +95,7 @@ func (s *UserService) UpdateUserInfo(ctx context.Context, userId int64, username
 		} else {
 			return nil, errs.ErrUsernameExisted
 		}
-		user.Username = username
+		updateMap["username"] = username
 	}
 	// 如果传入新邮箱，校验是否被别人占用
 	if email != "" && email != user.Email {
@@ -120,14 +107,32 @@ func (s *UserService) UpdateUserInfo(ctx context.Context, userId int64, username
 		} else {
 			return nil, errs.ErrEmailExisted
 		}
-		user.Email = email
+		updateMap["email"] = email
 	}
 
-	err = s.userRepo.UpdateUser(ctx, user)
+	if len(updateMap) == 0 {
+		return user, nil
+	}
+
+	err = s.userRepo.UpdateUserByMap(ctx, userId, updateMap)
+	if err != nil {
+		if s.userRepo.IsUniqueConstraintErr(err) {
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "username") {
+				return nil, errs.ErrUsernameExisted
+			}
+			if strings.Contains(errMsg, "email") {
+				return nil, errs.ErrEmailExisted
+			}
+		}
+		return nil, err
+	}
+
+	updatedUser, err := s.userRepo.FindUserByUserId(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return updatedUser, nil
 }
 
 // DeleteUser 删除自己账号
