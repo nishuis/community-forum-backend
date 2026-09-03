@@ -66,9 +66,12 @@ func main() {
 	likeCtrl := controller.NewLikeController(likeService, cfg)
 
 	//4.初始化Gin
-	r := gin.Default()
-	//4.1 全局请求ID中间件：为每个请求生成/透传 request_id（第3步将调整到访问日志之前）
+	//gin.New() 不带内置 Logger/Recovery，改用自建中间件链
+	r := gin.New()
+	//4.1 全局中间件链：请求ID -> 异常恢复 -> 访问日志（结构化 JSON）
 	r.Use(middleware.RequestID())
+	r.Use(gin.Recovery())
+	r.Use(middleware.AccessLog())
 
 	//5.路由分组
 	apiGroup := r.Group("/api/v1")
