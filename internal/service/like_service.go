@@ -52,32 +52,42 @@ func (s *LikeService) DoLike(ctx context.Context, userId int64, targetType int8,
 		}
 	}
 
-	//3.组装点赞实体
-	like := &domain.Like{
-		UserID:     userId,
-		TargetType: targetType,
-		TargetID:   targetID,
+	//3.判断是否已点赞
+	isLiked, err := s.likeRepo.IsUserLike(ctx, userId, targetType, targetID)
+	if err != nil {
+		return err
+	}
+	if isLiked {
+		return errs.ErrLikeAlready
 	}
 
-	err := s.likeRepo.CreateLike(ctx, like)
-	if err != nil {
-		// 捕获唯一索引冲突，转为业务错误：已经点赞
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
+	//4.分发调用repo事务方法
+	var repoErr error
+	switch targetType {
+	case domain.LikeTargetTypePost:
+		repoErr = s.likeRepo.DoPostLikeTx(ctx, userId, targetID)
+	case domain.LikeTargetTypeComment:
+		repoErr = s.likeRepo.DoCommentLikeTx(ctx, userId, targetID)
+	}
+
+	if repoErr != nil {
+		// 兜底：并发竞态，IsUserLike之后其他请求完成点赞，数据库报唯一索引冲突
+		if errors.Is(repoErr, gorm.ErrDuplicatedKey) {
 			return errs.ErrLikeAlready
 		}
-		return err
+		return repoErr
 	}
 	return nil
 }
 
 // CancelLike 取消点赞
 func (s *LikeService) CancelLike(ctx context.Context, userId int64, targetType int8, targetID int64) error {
-	//判断类型是否正确
+	//1.判断类型是否正确
 	if targetType != domain.LikeTargetTypePost && targetType != domain.LikeTargetTypeComment {
 		return errs.ErrLikeTargetType
 	}
 
-	//校验目标是否存在
+	//2.校验目标是否存在
 	switch targetType {
 	case domain.LikeTargetTypePost:
 		_, err := s.postRepo.FindPostById(ctx, targetID)
@@ -97,17 +107,24 @@ func (s *LikeService) CancelLike(ctx context.Context, userId int64, targetType i
 		}
 	}
 
-	// 判断是否已经点赞，未点赞不能取消
+	//3.判断是否已点赞
 	isLiked, err := s.likeRepo.IsUserLike(ctx, userId, targetType, targetID)
 	if err != nil {
 		return err
 	}
-	if !isLiked {
-		return errs.ErrLikeNotExist
+	if isLiked {
+		return errs.ErrLikeAlready
 	}
 
-	err = s.likeRepo.CancelLike(ctx, userId, targetType, targetID)
-	return err
+	//分发调用repo取消事务方法
+	var repoErr error
+	switch targetType {
+	case domain.LikeTargetTypePost:
+		repoErr = s.likeRepo.CancelPostLikeTx(ctx, userId, targetID)
+	case domain.LikeTargetTypeComment:
+		repoErr = s.likeRepo.CancelCommentLikeTx(ctx, userId, targetID)
+	}
+	return repoErr
 }
 
 // IsUserLike 判断单个目标点赞状态（用于详情页）

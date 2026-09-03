@@ -241,7 +241,7 @@ func (c *CommentController) GetCommentList(ginctx *gin.Context) {
 		page = 1
 	}
 	pageSize, err := strconv.Atoi(pageSizeStr)
-	if err != nil {
+	if err != nil || pageSize == 0 {
 		pageSize = 20
 	}
 

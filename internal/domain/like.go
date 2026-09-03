@@ -18,6 +18,10 @@ type Like struct {
 	//DeletedAt gorm.DeletedAt 直接物理删除，不软删除
 }
 
+func (Like) TableName() string {
+	return "likes"
+}
+
 const (
 	LikeTargetTypePost    int8 = 1 // 帖子
 	LikeTargetTypeComment int8 = 2 // 评论

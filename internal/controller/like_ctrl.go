@@ -206,7 +206,7 @@ func (c *LikeController) GetMyLiked(ginctx *gin.Context) {
 		page = 1
 	}
 	pageSize, err := strconv.Atoi(sizeStr)
-	if err != nil {
+	if err != nil || pageSize == 0 {
 		pageSize = 20
 	}
 
@@ -256,7 +256,7 @@ func (c *LikeController) GetMyLiked(ginctx *gin.Context) {
 	})
 }
 
-// GetLikeStatus 获取点赞状态 GET /api/like/status 公开接口，可选鉴权
+// GetLikeStatus 获取点赞状态 GET /api/like/status 可选鉴权
 // 默认返回未点赞和点赞数，鉴权成功，返回用户点赞状态和点赞数
 // query: target_type=1&target_id=10
 func (c *LikeController) GetLikeStatus(ginctx *gin.Context) {

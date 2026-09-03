@@ -21,10 +21,10 @@ type Post struct {
 	Summary string `gorm:"size:255;comment:'摘要'"`
 	Content string `gorm:"type:TEXT;not null;comment:'正文'"`
 
-	CommentCount    uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'评论数'"`
-	LikeCount       uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'点赞数'"`
-	CollectionCount uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'收藏数'"`
-	ViewCount       uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'观看次数'"`
+	//CommentCount uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'评论数'"`
+	LikeCount uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'点赞数'"`
+	//CollectionCount uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'收藏数'"`
+	//ViewCount uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'观看次数'"`
 
 	IsTop    int8       `gorm:"type:TINYINT;not null;default:0;index:idx_is_top;comment:'是否置顶，0-未置顶，1-置顶'"`
 	TopEndAt *time.Time `gorm:"index;comment:'置顶过期时间'"`

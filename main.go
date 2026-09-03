@@ -66,19 +66,19 @@ func main() {
 		publicGroup := apiGroup.Group("")
 		{
 			//用户注册、登录
-			publicGroup.POST("/users/login", userCtrl.Register)
-			publicGroup.POST("/auth/register", authCtrl.Login)
+			publicGroup.POST("/users/register", userCtrl.Register)
+			publicGroup.POST("/auth/login", authCtrl.Login)
 
 			//帖子公开查询
 			publicGroup.GET("/posts/:post_id", postCtrl.GetPostByPostId)
-			publicGroup.GET("/posts/:author_id/posts", postCtrl.GetAuthorPostList)
+			publicGroup.GET("/users/:author_id/posts", postCtrl.GetAuthorPostList)
 			publicGroup.GET("/posts/search", postCtrl.GetPostByKeyWordOffset)
 
 			//获取点赞状态
 			publicGroup.GET("like/status", likeCtrl.GetLikeStatus)
 
 			//获取评论列表
-			publicGroup.GET("/post/:post__id/comments", commentCtrl.GetCommentList)
+			publicGroup.GET("/post/:post_id/comments", commentCtrl.GetCommentList)
 		}
 
 		//需鉴权接口组
@@ -95,7 +95,7 @@ func main() {
 			//发帖,删帖，更新帖子
 			authGroup.POST("/posts", postCtrl.CreatePost)
 			authGroup.DELETE("/posts/:post_id", postCtrl.DeletePost)
-			authGroup.PUT("/posts/post_id", postCtrl.UpdatePost)
+			authGroup.PUT("/posts/:post_id", postCtrl.UpdatePost)
 
 			//发评论，删评论，编辑评论
 			authGroup.POST("/comment/create", commentCtrl.CreateComment)

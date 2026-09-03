@@ -282,6 +282,9 @@ func (c *PostController) GetPostByKeyWordOffset(ginctx *gin.Context) {
 		})
 		return
 	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
 
 	//2.调用service
 	ctx := ginctx.Request.Context()

@@ -26,8 +26,12 @@ type Comment struct {
 	Content string `gorm:"type:text;not null;comment:'评论内容'"`
 
 	//CommentCount    uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'评论数'"`
-	//LikeCount       uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'点赞数'"`
+	LikeCount uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'点赞数'"`
 	//CollectionCount uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'收藏数'"`
 	//ViewCount       uint `gorm:"type:INT UNSIGNED;default:0;not null;comment:'观看次数'"`
 
+}
+
+func (Comment) TableName() string {
+	return "comments"
 }

@@ -13,7 +13,9 @@ func InitDB(cfg *configs.Config) (*gorm.DB, error) {
 	dsn := cfg.BuildMysqlDSN()
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		//驱动错误转gorm哨兵错误
+		TranslateError: true,
+		Logger:         logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
 		return nil, err
