@@ -82,7 +82,7 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *domain.User) error {
 func (r *UserRepo) UpdateUserByMap(ctx context.Context, userId int64, updateMap map[string]interface{}) error {
 	return r.db.WithContext(ctx).
 		Model(&domain.User{}).
-		Where("id = ?", userId).
+		Where("user_id = ?", userId).
 		Updates(updateMap).Error
 }
 
