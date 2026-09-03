@@ -67,6 +67,8 @@ func main() {
 
 	//4.初始化Gin
 	r := gin.Default()
+	//4.1 全局请求ID中间件：为每个请求生成/透传 request_id（第3步将调整到访问日志之前）
+	r.Use(middleware.RequestID())
 
 	//5.路由分组
 	apiGroup := r.Group("/api/v1")
