@@ -36,13 +36,12 @@ func (r *UserRepo) FindUserByUsername(ctx context.Context, username string) (*do
 }
 
 // IsUniqueConstraintErr 判断是否唯一索引冲突
-// mysql 1062；postgres 23505
+// mysql 1062
 func (r *UserRepo) IsUniqueConstraintErr(err error) bool {
 	if err == nil {
 		return false
 	}
 
-	// MySQL
 	var mysqlErr *mysql.MySQLError
 	if errors.As(err, &mysqlErr) {
 		return mysqlErr.Number == 1062

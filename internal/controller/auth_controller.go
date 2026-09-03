@@ -46,6 +46,10 @@ func (ac *AuthController) Login(ginctx *gin.Context) {
 		//处理context错误
 		if errors.Is(err, context.Canceled) {
 			log.Printf("登录请求客户端主动取消: %v", err)
+			ginctx.JSON(http.StatusOK, gin.H{
+				"code": errs.CodeContextCancel,
+				"msg":  "客户端主动取消",
+			})
 			return
 		}
 		if errors.Is(err, context.DeadlineExceeded) {

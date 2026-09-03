@@ -89,7 +89,10 @@ func (s *PostService) UpdatePost(ctx context.Context, userId int64, postId int64
 	//2..查询帖子存在
 	post, err := s.postRepo.FindPostById(ctx, postId)
 	if err != nil {
-		return errs.ErrPostNotExist
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errs.ErrPostNotExist
+		}
+		return err
 	}
 	//3..验权
 	if post.AuthorID != userId {
