@@ -4,7 +4,10 @@ package service
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
 
+	"github.com/nishuis/community-forum-backend/internal/cache"
 	"github.com/nishuis/community-forum-backend/internal/domain"
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"github.com/nishuis/community-forum-backend/internal/repository"
@@ -15,13 +18,35 @@ import (
 type CommentService struct {
 	commentRepo *repository.CommentRepo
 	postRepo    *repository.PostRepo
+	cache       *cache.Cache
+}
+
+// commentListTTL 评论列表缓存 TTL（基础值，实际写入会加 ±30% 随机抖动）
+const commentListTTL = 5 * time.Minute
+
+// commentPageCache 评论列表缓存组合结构：分页列表 + 总数
+type commentPageCache struct {
+	List  []*domain.Comment `json:"list"`
+	Total int64             `json:"total"`
+}
+
+// commentListCacheKey 评论列表缓存 key：cf:comment:{postId}:{page}:{size}
+func commentListCacheKey(postId int64, page int, pageSize int) string {
+	return "cf:comment:" + strconv.FormatInt(postId, 10) + ":" + strconv.Itoa(page) + ":" + strconv.Itoa(pageSize)
+}
+
+// commentListCachePattern 评论列表缓存失效模式：cf:comment:{postId}:*
+// 评论增删改不知道此前生成过哪些分页，用 SCAN 按模式批量删除。
+func commentListCachePattern(postId int64) string {
+	return "cf:comment:" + strconv.FormatInt(postId, 10) + ":*"
 }
 
 // NewCommentService 新建评论业务实例，外部注入 repo 依赖。
-func NewCommentService(commentRepo *repository.CommentRepo, postRepo *repository.PostRepo) *CommentService {
+func NewCommentService(commentRepo *repository.CommentRepo, postRepo *repository.PostRepo, cache *cache.Cache) *CommentService {
 	return &CommentService{
 		commentRepo: commentRepo,
 		postRepo:    postRepo,
+		cache:       cache,
 	}
 }
 
@@ -75,6 +100,9 @@ func (s *CommentService) CreateComment(ctx context.Context, postId int64, parent
 	if err != nil {
 		return nil, err
 	}
+
+	//5.写后失效：新评论会改变该帖所有分页，按模式批量删除缓存
+	s.cache.DeletePattern(ctx, commentListCachePattern(postId))
 	return newComment, nil
 }
 
@@ -94,7 +122,13 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentId int64, use
 	}
 
 	err = s.commentRepo.DeleteComment(ctx, commentId)
-	return err
+	if err != nil {
+		return err
+	}
+
+	//写后失效：删除该帖全部评论分页缓存
+	s.cache.DeletePattern(ctx, commentListCachePattern(comment.PostID))
+	return nil
 }
 
 // EditComment 编辑评论
@@ -129,12 +163,15 @@ func (s *CommentService) EditComment(ctx context.Context, commentId int64, conte
 		return nil, err
 	}
 
-	// 5.重新查询最新数据返回
+	// 5.写后失效：编辑评论会改变该帖评论列表，按模式批量删除缓存
+	s.cache.DeletePattern(ctx, commentListCachePattern(comment.PostID))
+
+	// 6.重新查询最新数据返回
 	newComment, err := s.commentRepo.FindCommentByID(ctx, commentId)
 	return newComment, err
 }
 
-// GetCommentPageByPostId 获取帖子分页评论列表
+// GetCommentPageByPostId 获取帖子分页评论列表（Cache-Aside：先查缓存，未命中查 DB 回填）
 func (s *CommentService) GetCommentPageByPostId(ctx context.Context, postId int64, page int, pageSize int) ([]*domain.Comment, int64, error) {
 	//简单校验page，兜底
 	if page < 1 {
@@ -144,7 +181,7 @@ func (s *CommentService) GetCommentPageByPostId(ctx context.Context, postId int6
 		pageSize = 20
 	}
 
-	//校验帖子是否存在
+	//校验帖子是否存在（保持直查 DB，正确性优先）
 	_, err := s.postRepo.FindPostById(ctx, postId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -153,6 +190,22 @@ func (s *CommentService) GetCommentPageByPostId(ctx context.Context, postId int6
 		return nil, 0, err
 	}
 
+	key := commentListCacheKey(postId, page, pageSize)
+
+	//1.先查缓存
+	var cached commentPageCache
+	found, _ := s.cache.GetJSON(ctx, key, &cached)
+	if found {
+		return cached.List, cached.Total, nil
+	}
+
+	//2.缓存未命中，查 DB
 	list, total, err := s.commentRepo.FindCommentPageByPostID(ctx, postId, page, pageSize)
-	return list, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+
+	//3.回填缓存（空分页也缓存，避免重复 COUNT 查询）
+	s.cache.SetJSON(ctx, key, commentPageCache{List: list, Total: total}, commentListTTL)
+	return list, total, nil
 }

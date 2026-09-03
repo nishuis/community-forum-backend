@@ -4,9 +4,12 @@ package service
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/nishuis/community-forum-backend/configs"
+	"github.com/nishuis/community-forum-backend/internal/cache"
 	"github.com/nishuis/community-forum-backend/internal/domain"
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"github.com/nishuis/community-forum-backend/internal/repository"
@@ -18,14 +21,24 @@ type PostService struct {
 	postRepo *repository.PostRepo
 	userRepo *repository.UserRepo
 	config   *configs.Config
+	cache    *cache.Cache
+}
+
+// postDetailTTL 帖子详情缓存 TTL（基础值，实际写入会加 ±30% 随机抖动）
+const postDetailTTL = 10 * time.Minute
+
+// postCacheKey 帖子详情缓存 key：cf:post:{postId}
+func postCacheKey(postId int64) string {
+	return "cf:post:" + strconv.FormatInt(postId, 10)
 }
 
 // NewPostService 新建业务结构体
-func NewPostService(postRepo *repository.PostRepo, userRepo *repository.UserRepo, cfg *configs.Config) *PostService {
+func NewPostService(postRepo *repository.PostRepo, userRepo *repository.UserRepo, cfg *configs.Config, cache *cache.Cache) *PostService {
 	return &PostService{
 		postRepo: postRepo,
 		userRepo: userRepo,
 		config:   cfg,
+		cache:    cache,
 	}
 }
 
@@ -77,7 +90,13 @@ func (s *PostService) DeletePost(ctx context.Context, userId int64, postId int64
 
 	//3.删除帖子
 	err = s.postRepo.DeletePost(ctx, postId)
-	return err
+	if err != nil {
+		return err
+	}
+
+	//4.写后失效：删除成功删除缓存，避免残留脏数据
+	s.cache.Delete(ctx, postCacheKey(postId))
+	return nil
 }
 
 // UpdatePost 编辑帖子
@@ -108,18 +127,40 @@ func (s *PostService) UpdatePost(ctx context.Context, userId int64, postId int64
 	if rows == 0 {
 		return errs.ErrPostNotExist
 	}
+
+	//5.写后失效：更新成功删除缓存，下次读取时重建
+	s.cache.Delete(ctx, postCacheKey(postId))
 	return nil
 }
 
-// GetPostById 获取单条帖子业务
+// GetPostById 获取单条帖子业务（Cache-Aside：先查缓存，未命中查 DB 回填）
 func (s *PostService) GetPostById(ctx context.Context, postId int64) (*domain.Post, error) {
+	key := postCacheKey(postId)
+
+	// 1.先查缓存
+	var cached domain.Post
+	found, empty := s.cache.GetJSON(ctx, key, &cached)
+	if found {
+		return &cached, nil
+	}
+	if empty {
+		// 命中空值占位：此前已确认帖子不存在（防穿透）
+		return nil, errs.ErrPostNotExist
+	}
+
+	// 2.缓存未命中，查 DB
 	post, err := s.postRepo.FindPostById(ctx, postId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 3a.防穿透：不存在的 ID 写空值占位（短 TTL 快速自愈）
+			s.cache.SetEmpty(ctx, key)
 			return nil, errs.ErrPostNotExist
 		}
 		return nil, err
 	}
+
+	// 3b.回填缓存
+	s.cache.SetJSON(ctx, key, post, postDetailTTL)
 	return post, nil
 }
 

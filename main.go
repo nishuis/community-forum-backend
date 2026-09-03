@@ -53,10 +53,10 @@ func main() {
 	commentRepo := repository.NewCommentRepo(db)
 	likeRepo := repository.NewLikeRepo(db)
 	//service
-	userService := service.NewUserService(userRepo, cfg)
+	userService := service.NewUserService(userRepo, cfg, nil) // TODO 步骤8: 注入真实 cache
 	authService := service.NewAuthService(userRepo, cfg)
-	postService := service.NewPostService(postRepo, userRepo, cfg)
-	commentService := service.NewCommentService(commentRepo, postRepo)
+	postService := service.NewPostService(postRepo, userRepo, cfg, nil) // TODO 步骤8: 注入真实 cache
+	commentService := service.NewCommentService(commentRepo, postRepo, nil) // TODO 步骤8: 注入真实 cache
 	likeService := service.NewLikeService(likeRepo, postRepo, commentRepo)
 	//controller
 	userCtrl := controller.NewUserController(userService)

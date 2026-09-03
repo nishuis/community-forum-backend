@@ -20,7 +20,7 @@ func TestRegisterDuplicateUsername(t *testing.T) {
 	db, mock := newMockDB(t)
 	defer db.Close()
 
-	svc := service.NewUserService(repository.NewUserRepo(newGormDB(t, db)), &configs.Config{})
+	svc := service.NewUserService(repository.NewUserRepo(newGormDB(t, db)), &configs.Config{}, nil)
 
 	// 模拟 repository.CreateUser 插入时撞上 users.uk_username 唯一索引。
 	// gorm 默认把单条 Create 包在事务里：BEGIN -> INSERT(报 1062) -> ROLLBACK。
