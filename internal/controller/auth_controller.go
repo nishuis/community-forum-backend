@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +10,7 @@ import (
 	"github.com/nishuis/community-forum-backend/internal/dto/response"
 	"github.com/nishuis/community-forum-backend/internal/errs"
 	"github.com/nishuis/community-forum-backend/internal/service"
+	ginutil "github.com/nishuis/community-forum-backend/pkg/gin_util"
 )
 
 // AuthController 只管凭证、身份认证，不操作用户业务字段
@@ -45,7 +45,7 @@ func (ac *AuthController) Login(ginctx *gin.Context) {
 	if err != nil {
 		//处理context错误
 		if errors.Is(err, context.Canceled) {
-			log.Printf("登录请求客户端主动取消: %v", err)
+			ginutil.LogError(ginctx, "登录请求客户端主动取消", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeContextCancel,
 				"msg":  "客户端主动取消",
@@ -53,7 +53,7 @@ func (ac *AuthController) Login(ginctx *gin.Context) {
 			return
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("请求超时：%v", err)
+			ginutil.LogError(ginctx, "请求超时", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeDeadLineExceeded,
 				"msg":  "超时未响应",
@@ -69,7 +69,7 @@ func (ac *AuthController) Login(ginctx *gin.Context) {
 				"msg":  "用户名或密码错误",
 			})
 		default:
-			log.Printf("登录业务异常 err: %v", err)
+			ginutil.LogError(ginctx, "登录业务异常", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",

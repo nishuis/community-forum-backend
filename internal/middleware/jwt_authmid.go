@@ -2,13 +2,13 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/errs"
+	ginutil "github.com/nishuis/community-forum-backend/pkg/gin_util"
 	jwtutil "github.com/nishuis/community-forum-backend/pkg/jwt_util"
 )
 
@@ -45,7 +45,7 @@ func JWTAuth(cfg *configs.Config) gin.HandlerFunc {
 		tokenStr := parts[1]
 		claims, err := jwtutil.ParseToken(tokenStr, cfg.Jwt.Secret)
 		if err != nil {
-			log.Printf("解析失败：%v", err)
+			ginutil.LogError(c, "JWT解析失败", "err", err)
 			c.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeAuthFail,
 				"msg":  "校验失败",

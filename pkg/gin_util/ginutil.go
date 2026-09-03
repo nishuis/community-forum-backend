@@ -3,7 +3,7 @@ package ginutil
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -13,12 +13,23 @@ import (
 	jwtutil "github.com/nishuis/community-forum-backend/pkg/jwt_util"
 )
 
+// LogError 输出带请求上下文（request_id / user_id）的结构化错误日志。
+// attrs 传键值对，例如：LogError(c, "发帖失败", "err", err)
+func LogError(c *gin.Context, msg string, attrs ...any) {
+	fields := []any{
+		"request_id", c.GetString("requestId"),
+		"user_id", c.GetInt64("userId"),
+	}
+	fields = append(fields, attrs...)
+	slog.ErrorContext(c.Request.Context(), msg, fields...)
+}
+
 // GetCurrentUserInfo 获取当前登录用户 userId username
 // return：ok = true 获取成功；ok=false 内部已经 c.JSON + c.Abort()，controller直接return即可
 func GetCurrentUserInfo(c *gin.Context) (userId int64, username string, ok bool) {
 	val, exist := c.Get("userId")
 	if !exist {
-		log.Printf("jwt中间件异常放行，上下文不存在userId")
+		LogError(c, "jwt中间件异常放行，上下文不存在userId")
 		c.JSON(200, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -28,7 +39,7 @@ func GetCurrentUserInfo(c *gin.Context) (userId int64, username string, ok bool)
 	}
 	userId, typeOk := val.(int64)
 	if !typeOk {
-		log.Printf("jwt中间件异常放行，userId类型断言失败")
+		LogError(c, "jwt中间件异常放行，userId类型断言失败")
 		c.JSON(200, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -39,7 +50,7 @@ func GetCurrentUserInfo(c *gin.Context) (userId int64, username string, ok bool)
 
 	uName, exist := c.Get("username")
 	if !exist {
-		log.Printf("jwt中间件异常放行，上下文不存在username")
+		LogError(c, "jwt中间件异常放行，上下文不存在username")
 		c.JSON(200, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -49,7 +60,7 @@ func GetCurrentUserInfo(c *gin.Context) (userId int64, username string, ok bool)
 	}
 	username, typeOk = uName.(string)
 	if !typeOk {
-		log.Printf("jwt中间件异常放行，username类型断言失败")
+		LogError(c, "jwt中间件异常放行，username类型断言失败")
 		c.JSON(200, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -67,7 +78,7 @@ func GetCurrentUserInfo(c *gin.Context) (userId int64, username string, ok bool)
 // 返回值 false: 不是context错误，controller继续处理业务错误
 func HandleContextError(c *gin.Context, err error, logMsg string) bool {
 	if errors.Is(err, context.Canceled) {
-		log.Printf("%s,客户端主动取消: %v", logMsg, err)
+		LogError(c, logMsg+",客户端主动取消", "err", err)
 		c.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeContextCancel,
 			"msg":  "服务取消",
@@ -75,7 +86,7 @@ func HandleContextError(c *gin.Context, err error, logMsg string) bool {
 		return true
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
-		log.Printf("%s,请求超时: %v", logMsg, err)
+		LogError(c, logMsg+",请求超时", "err", err)
 		c.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeDeadLineExceeded,
 			"msg":  "超时未响应",
@@ -104,7 +115,7 @@ func TryGetUserIdFromHeader(c *gin.Context, cfg *configs.Config) int64 {
 	//3.解析token
 	claims, err := jwtutil.ParseToken(tokenStr, cfg.Jwt.Secret)
 	if err != nil {
-		log.Printf("TryGetUserIdFromHeader parse token fail: %v", err)
+		LogError(c, "TryGetUserIdFromHeader parse token fail", "err", err)
 		return 0
 	}
 	return claims.UserId

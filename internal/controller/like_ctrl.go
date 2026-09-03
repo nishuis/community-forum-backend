@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -33,7 +32,7 @@ func (c *LikeController) DoLike(ginctx *gin.Context) {
 	//1.获取当前操作用户信息
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -42,7 +41,7 @@ func (c *LikeController) DoLike(ginctx *gin.Context) {
 	}
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -53,7 +52,7 @@ func (c *LikeController) DoLike(ginctx *gin.Context) {
 	//2.获取请求信息，targetType,TargetId
 	var req request.DoLikeReq
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("DoLike bind json err: %v", err)
+		ginutil.LogError(ginctx, "DoLike bind json err", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "请求参数错误",
@@ -80,7 +79,7 @@ func (c *LikeController) DoLike(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("DoLike service err:%v", err)
+			ginutil.LogError(ginctx, "DoLike service err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -101,7 +100,7 @@ func (c *LikeController) CancelLike(ginctx *gin.Context) {
 	//1.获取当前操作用户信息
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -110,7 +109,7 @@ func (c *LikeController) CancelLike(ginctx *gin.Context) {
 	}
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -121,7 +120,7 @@ func (c *LikeController) CancelLike(ginctx *gin.Context) {
 	//2.获取请求信息，targetType、targetId
 	var req request.CancelLikeReq
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("CancelLike bind json err: %v", err)
+		ginutil.LogError(ginctx, "CancelLike bind json err", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "请求参数错误",
@@ -148,7 +147,7 @@ func (c *LikeController) CancelLike(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("CancelLike service err:%v", err)
+			ginutil.LogError(ginctx, "CancelLike service err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -170,7 +169,7 @@ func (c *LikeController) GetMyLiked(ginctx *gin.Context) {
 	//1.获取当前用户信息
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -179,7 +178,7 @@ func (c *LikeController) GetMyLiked(ginctx *gin.Context) {
 	}
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -227,7 +226,7 @@ func (c *LikeController) GetMyLiked(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("GetMyLiked service err:%v", err)
+			ginutil.LogError(ginctx, "GetMyLiked service err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -294,7 +293,7 @@ func (c *LikeController) GetLikeStatus(ginctx *gin.Context) {
 				return
 			}
 			//处理业务错误
-			log.Printf("GetLikeStatus isLike err:%v", err)
+			ginutil.LogError(ginctx, "GetLikeStatus isLike err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -317,7 +316,7 @@ func (c *LikeController) GetLikeStatus(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("GetLikeStatus count err:%v", err)
+			ginutil.LogError(ginctx, "GetLikeStatus count err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",

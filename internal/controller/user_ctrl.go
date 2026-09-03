@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +40,7 @@ func (uc *UserController) Register(ginctx *gin.Context) {
 	//入参必须是指针，因为要修改结构体，传值会操作副本，校验失败返回错误
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
 		//响应前端
-		log.Printf("Bind error: %v", err)
+		ginutil.LogError(ginctx, "Bind error", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			//参数校验，缺少username/password字段类型错误
 			"code": errs.CodeParamError,
@@ -65,7 +64,7 @@ func (uc *UserController) Register(ginctx *gin.Context) {
 	if err != nil {
 		//处理context错误
 		if errors.Is(err, context.Canceled) {
-			log.Printf("注册请求客户端主动取消: %v", err)
+			ginutil.LogError(ginctx, "注册请求客户端主动取消", "err", err)
 			// ❌直接return，
 			// 没有给前端写任何http响应，会造成前端挂起等待超时
 			ginctx.JSON(http.StatusOK, gin.H{
@@ -75,7 +74,7 @@ func (uc *UserController) Register(ginctx *gin.Context) {
 			return
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("请求超时：%v", err)
+			ginutil.LogError(ginctx, "请求超时", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeDeadLineExceeded,
 				"msg":  "超时未响应",
@@ -96,7 +95,7 @@ func (uc *UserController) Register(ginctx *gin.Context) {
 				"msg":  "邮箱已注册",
 			})
 		default:
-			log.Printf("注册业务错误：%v", err)
+			ginutil.LogError(ginctx, "注册业务错误", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -143,7 +142,7 @@ func (uc *UserController) DeleteUser(ginctx *gin.Context) {
 			})
 			return
 		}
-		log.Printf("DeleteUser err: %v", err)
+		ginutil.LogError(ginctx, "DeleteUser err", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -169,7 +168,7 @@ func (uc *UserController) UpdateUserInfo(ginctx *gin.Context) {
 	//2.获取请求信息
 	var req request.UpdateUserInfoReq
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("UpdateUserInfo bind error: %v", err)
+		ginutil.LogError(ginctx, "UpdateUserInfo bind error", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "请求参数错误",
@@ -192,7 +191,7 @@ func (uc *UserController) UpdateUserInfo(ginctx *gin.Context) {
 		case errors.Is(err, errs.ErrEmailExisted):
 			ginctx.JSON(http.StatusOK, gin.H{"code": errs.CodeParamError, "msg": "邮箱已存在"})
 		default:
-			log.Printf("UpdateUserInfo err: %v", err)
+			ginutil.LogError(ginctx, "UpdateUserInfo err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{"code": errs.CodeServerInternal, "msg": "服务器内部错误"})
 		}
 		return
@@ -212,7 +211,7 @@ func (uc *UserController) GetCurrentUser(ginctx *gin.Context) {
 	//1.获取userID
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件JWTAuth异常放行，未正确获取userId")
+		ginutil.LogError(ginctx, "jwt中间件JWTAuth异常放行，未正确获取userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -223,7 +222,7 @@ func (uc *UserController) GetCurrentUser(ginctx *gin.Context) {
 	//2.类型断言和转换，调用service用userID查找用户
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行,UserId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行,UserId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -236,11 +235,11 @@ func (uc *UserController) GetCurrentUser(ginctx *gin.Context) {
 	if err != nil {
 		//处理context错误
 		if errors.Is(err, context.Canceled) {
-			log.Printf("获取信息请求客户端主动取消: %v", err)
+			ginutil.LogError(ginctx, "获取信息请求客户端主动取消", "err", err)
 			return
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("请求超时：%v", err)
+			ginutil.LogError(ginctx, "请求超时", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeDeadLineExceeded,
 				"msg":  "超时未响应",
@@ -256,7 +255,7 @@ func (uc *UserController) GetCurrentUser(ginctx *gin.Context) {
 				"msg":  "用户不存在",
 			})
 		default:
-			log.Printf("获取信息异常：%v", err)
+			ginutil.LogError(ginctx, "获取信息异常", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",

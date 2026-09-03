@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -28,7 +27,7 @@ func (c *CommentController) CreateComment(ginctx *gin.Context) {
 	// 从jwt上下文获取userId
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -37,7 +36,7 @@ func (c *CommentController) CreateComment(ginctx *gin.Context) {
 	}
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -47,7 +46,7 @@ func (c *CommentController) CreateComment(ginctx *gin.Context) {
 
 	var req request.CreateCommentReq
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("CreateComment bind json err: %v", err)
+		ginutil.LogError(ginctx, "CreateComment bind json err", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "请求参数错误",
@@ -74,7 +73,7 @@ func (c *CommentController) CreateComment(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("CreateComment service err:%v", err)
+			ginutil.LogError(ginctx, "CreateComment service err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -95,7 +94,7 @@ func (c *CommentController) CreateComment(ginctx *gin.Context) {
 func (c *CommentController) DeleteComment(ginctx *gin.Context) {
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -104,7 +103,7 @@ func (c *CommentController) DeleteComment(ginctx *gin.Context) {
 	}
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -136,7 +135,7 @@ func (c *CommentController) DeleteComment(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("DeleteComment service err:%v", err)
+			ginutil.LogError(ginctx, "DeleteComment service err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -156,7 +155,7 @@ func (c *CommentController) UpdateComment(ginctx *gin.Context) {
 	// 1.获取登录用户
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -165,7 +164,7 @@ func (c *CommentController) UpdateComment(ginctx *gin.Context) {
 	}
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -176,7 +175,7 @@ func (c *CommentController) UpdateComment(ginctx *gin.Context) {
 	// 2.绑定参数
 	var req request.UpdateCommentReq
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("EditComment bind err: %v", err)
+		ginutil.LogError(ginctx, "EditComment bind err", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "参数错误",
@@ -203,7 +202,7 @@ func (c *CommentController) UpdateComment(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("EditComment service err: %v", err)
+			ginutil.LogError(ginctx, "EditComment service err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -258,7 +257,7 @@ func (c *CommentController) GetCommentList(ginctx *gin.Context) {
 			})
 			return
 		default:
-			log.Printf("GetCommentList service err:%v", err)
+			ginutil.LogError(ginctx, "GetCommentList service err", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",

@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -31,7 +30,7 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 	//1.获取userId,title,content
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取到userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取到userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -40,7 +39,7 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 	}
 	var req request.CreatePostReq
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("bind error: %v", err)
+		ginutil.LogError(ginctx, "bind error", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "请求参数错误",
@@ -51,7 +50,7 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 	//2.获取int64格式userId
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -64,7 +63,7 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 	if err != nil {
 		//处理context错误
 		if errors.Is(err, context.Canceled) {
-			log.Printf("发帖请求客户端主动取消: %v", err)
+			ginutil.LogError(ginctx, "发帖请求客户端主动取消", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeContextCancel,
 				"msg":  "服务取消",
@@ -72,7 +71,7 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 			return
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("请求超时：%v", err)
+			ginutil.LogError(ginctx, "请求超时", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeDeadLineExceeded,
 				"msg":  "超时未响应",
@@ -89,7 +88,7 @@ func (c *PostController) CreatePost(ginctx *gin.Context) {
 			return
 		}
 
-		log.Printf("发帖业务错误：%v", err)
+		ginutil.LogError(ginctx, "发帖业务错误", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -115,7 +114,7 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 	//1.获取userId
 	val, ok := ginctx.Get("userId")
 	if !ok {
-		log.Printf("jwt中间件异常放行，未获取到userId")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，未获取到userId")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -124,7 +123,7 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 	}
 	userId, ok := val.(int64)
 	if !ok {
-		log.Printf("jwt中间件异常放行，userId类型异常")
+		ginutil.LogError(ginctx, "jwt中间件异常放行，userId类型异常")
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -136,7 +135,7 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 	postIdStr := ginctx.Param("post_id")
 	postId, err := strconv.ParseInt(postIdStr, 10, 64)
 	if err != nil {
-		log.Printf("post_id 参数错误: %v", err)
+		ginutil.LogError(ginctx, "post_id 参数错误", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "post_id 参数格式错误",
@@ -149,7 +148,7 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 	if err != nil {
 		//处理context错误
 		if errors.Is(err, context.Canceled) {
-			log.Printf("删帖请求客户端主动取消: %v", err)
+			ginutil.LogError(ginctx, "删帖请求客户端主动取消", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeContextCancel,
 				"msg":  "服务取消",
@@ -157,7 +156,7 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 			return
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("请求超时：%v", err)
+			ginutil.LogError(ginctx, "请求超时", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeDeadLineExceeded,
 				"msg":  "超时未响应",
@@ -178,7 +177,7 @@ func (c *PostController) DeletePost(ginctx *gin.Context) {
 				"msg":  "内容不存在",
 			})
 		default:
-			log.Printf("删帖业务错误：%v", err)
+			ginutil.LogError(ginctx, "删帖业务错误", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -207,7 +206,7 @@ func (c *PostController) UpdatePost(ginctx *gin.Context) {
 	postIdStr := ginctx.Param("post_id")
 	postId, err := strconv.ParseInt(postIdStr, 10, 64)
 	if err != nil {
-		log.Printf("post_id 参数错误: %v", err)
+		ginutil.LogError(ginctx, "post_id 参数错误", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "post_id 参数格式错误",
@@ -216,7 +215,7 @@ func (c *PostController) UpdatePost(ginctx *gin.Context) {
 	}
 	var req request.UpdatePostReq
 	if err := ginctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("bind error: %v", err)
+		ginutil.LogError(ginctx, "bind error", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "请求参数错误",
@@ -251,7 +250,7 @@ func (c *PostController) UpdatePost(ginctx *gin.Context) {
 				"msg":  "内容不存在",
 			})
 		default:
-			log.Printf("更新帖子业务错误：%v", err)
+			ginutil.LogError(ginctx, "更新帖子业务错误", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -275,7 +274,7 @@ func (c *PostController) GetPostByKeyWordOffset(ginctx *gin.Context) {
 	var req request.ShowByKeyWordOffsetReq
 	err := ginctx.ShouldBindQuery(&req)
 	if err != nil {
-		log.Printf("ShowByKeyWordOffset绑定失败：%v", err)
+		ginutil.LogError(ginctx, "ShowByKeyWordOffset绑定失败", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "参数错误",
@@ -297,7 +296,7 @@ func (c *PostController) GetPostByKeyWordOffset(ginctx *gin.Context) {
 		}
 
 		//其他错误
-		log.Printf("ShowByKeyWordOffset Error: %v", err)
+		ginutil.LogError(ginctx, "ShowByKeyWordOffset Error", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeServerInternal,
 			"msg":  "服务器内部错误",
@@ -333,7 +332,7 @@ func (c *PostController) GetPostByPostId(ginctx *gin.Context) {
 	postIdStr := ginctx.Param("post_id")
 	postId, err := strconv.ParseInt(postIdStr, 10, 64)
 	if err != nil {
-		log.Printf("post_id 参数错误: %v", err)
+		ginutil.LogError(ginctx, "post_id 参数错误", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "post_id 参数格式错误",
@@ -357,7 +356,7 @@ func (c *PostController) GetPostByPostId(ginctx *gin.Context) {
 				"msg":  "内容不存在",
 			})
 		default:
-			log.Printf("GetPostDetail 业务错误：%v", err)
+			ginutil.LogError(ginctx, "GetPostDetail 业务错误", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
@@ -381,7 +380,7 @@ func (c *PostController) GetAuthorPostList(ginctx *gin.Context) {
 	authorIdStr := ginctx.Param("author_id")
 	authorId, err := strconv.ParseInt(authorIdStr, 10, 64)
 	if err != nil {
-		log.Printf("author_id 参数错误: %v", err)
+		ginutil.LogError(ginctx, "author_id 参数错误", "err", err)
 		ginctx.JSON(http.StatusOK, gin.H{
 			"code": errs.CodeParamError,
 			"msg":  "author_id 参数格式错误",
@@ -403,7 +402,7 @@ func (c *PostController) GetAuthorPostList(ginctx *gin.Context) {
 				"msg":  "用户不存在",
 			})
 		default:
-			log.Printf("GetAuthorPostList 业务错误：%v", err)
+			ginutil.LogError(ginctx, "GetAuthorPostList 业务错误", "err", err)
 			ginctx.JSON(http.StatusOK, gin.H{
 				"code": errs.CodeServerInternal,
 				"msg":  "服务器内部错误",
