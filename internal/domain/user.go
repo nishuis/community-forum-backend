@@ -7,7 +7,8 @@ import (
 )
 
 type User struct {
-	UserId    int64          `gorm:"primaryKey;autoIncrement;comment:'主键ID'"`
+	// 主键必须与库中现有 bigint unsigned 一致，否则外键关联（author_id 等）建表报类型不兼容
+	UserId    int64          `gorm:"type:BIGINT UNSIGNED;primaryKey;autoIncrement;comment:'主键ID'"`
 	CreatedAt time.Time      `gorm:"comment:'创建时间'"`
 	UpdatedAt time.Time      `gorm:"comment:'更新时间'"`
 	DeletedAt gorm.DeletedAt `gorm:"index;comment:'删除时间'"`
