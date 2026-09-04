@@ -115,8 +115,8 @@ func (s *LikeService) CancelLike(ctx context.Context, userId int64, targetType i
 	if err != nil {
 		return err
 	}
-	if isLiked {
-		return errs.ErrLikeAlready
+	if !isLiked {
+		return errs.ErrLikeNotExist
 	}
 
 	//分发调用repo取消事务方法
