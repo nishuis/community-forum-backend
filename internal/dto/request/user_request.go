@@ -15,7 +15,7 @@ type LoginReq struct {
 }
 
 // RefreshTokenReq 刷新token请求
-type RefreshTokenReqt struct {
+type RefreshTokenReq struct {
 	RefreshToken string `json:"refresh_token" binding:"required"` //not null
 }
 

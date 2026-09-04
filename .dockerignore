@@ -1,0 +1,36 @@
+# Go binary and dependencies
+app
+
+# Build artifacts
+*.o
+*.a
+*.so
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test and documentation
+test/
+docs/
+README.md
+
+# Development files
+*.log
+.env
+.env.local
+
+# Go cache
+go.sum (optional - included for reproducibility, adjust if needed)
