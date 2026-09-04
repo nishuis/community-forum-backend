@@ -29,3 +29,4 @@ configs/config.yaml
 
 # log
 *.log
+configs/config_for_docker.yaml
