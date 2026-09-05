@@ -14,7 +14,7 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"index;comment:'删除时间'"`
 
 	Username string `gorm:"size:30;not null;uniqueIndex:uk_username;comment:'用户名，不能为空'"`
-	Password string `gorm:"size:255;not null;comment:'密码，不存明文存哈希'"`
+	Password string `gorm:"size:255;not null;comment:'密码，不存明文存哈希'" json:"-"`
 	Email    string `gorm:"size:150;not null;uniqueIndex:uk_email;comment:'邮箱'"`
 	Nickname string `gorm:"size:30;not null;default:'';comment:'昵称'"`
 	Avatar   string `gorm:"size:255;not null;default:'';comment:'头像URL'"`
