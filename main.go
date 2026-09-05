@@ -64,7 +64,7 @@ func main() {
 	authService := service.NewAuthService(userRepo, cfg)
 	postService := service.NewPostService(postRepo, userRepo, cfg, cacheSvc)
 	commentService := service.NewCommentService(commentRepo, postRepo, cacheSvc)
-	likeService := service.NewLikeService(likeRepo, postRepo, commentRepo)
+	likeService := service.NewLikeService(likeRepo, postRepo, commentRepo, cacheSvc)
 	//controller
 	userCtrl := controller.NewUserController(userService)
 	authCtrl := controller.NewAuthController(authService)
