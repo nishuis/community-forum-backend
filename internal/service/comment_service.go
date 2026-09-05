@@ -14,10 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// CommentService 评论业务结构体，依赖 CommentRepo/PostRepo 注入。
+// CommentService 评论业务结构体，依赖 CommentRepo/PostService/Cache 注入。
 type CommentService struct {
 	commentRepo *repository.CommentRepo
-	postRepo    *repository.PostRepo
+	postService *PostService
 	cache       *cache.Cache
 }
 
@@ -41,11 +41,11 @@ func commentListCachePattern(postId int64) string {
 	return "cf:comment:" + strconv.FormatInt(postId, 10) + ":*"
 }
 
-// NewCommentService 新建评论业务实例，外部注入 repo 依赖。
-func NewCommentService(commentRepo *repository.CommentRepo, postRepo *repository.PostRepo, cache *cache.Cache) *CommentService {
+// NewCommentService 新建评论业务实例，外部注入 repo、PostService 与 cache 依赖。
+func NewCommentService(commentRepo *repository.CommentRepo, postService *PostService, cache *cache.Cache) *CommentService {
 	return &CommentService{
 		commentRepo: commentRepo,
-		postRepo:    postRepo,
+		postService: postService,
 		cache:       cache,
 	}
 }
@@ -62,12 +62,9 @@ func (s *CommentService) CreateComment(ctx context.Context, postId int64, parent
 		return nil, errs.ErrCommentContentTooLong
 	}
 
-	// 2.校验帖子是否存在
-	_, err := s.postRepo.FindPostById(ctx, postId)
+	// 2.校验帖子是否存在（走 PostService 缓存，空值占位防穿透生效）
+	_, err := s.postService.GetPostById(ctx, postId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errs.ErrPostNotExist
-		}
 		return nil, err
 	}
 
@@ -181,12 +178,8 @@ func (s *CommentService) GetCommentPageByPostId(ctx context.Context, postId int6
 		pageSize = 20
 	}
 
-	//校验帖子是否存在（保持直查 DB，正确性优先）
-	_, err := s.postRepo.FindPostById(ctx, postId)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, 0, errs.ErrPostNotExist
-		}
+	//校验帖子是否存在（走 PostService 缓存，空值占位防穿透生效）
+	if _, err := s.postService.GetPostById(ctx, postId); err != nil {
 		return nil, 0, err
 	}
 

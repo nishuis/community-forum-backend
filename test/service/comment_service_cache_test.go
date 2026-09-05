@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/nishuis/community-forum-backend/configs"
 	"github.com/nishuis/community-forum-backend/internal/repository"
 	"github.com/nishuis/community-forum-backend/internal/service"
 )
@@ -28,14 +29,21 @@ func TestGetCommentPage_MissThenHit(t *testing.T) {
 	defer db.Close()
 	srv, cacheSvc := newMiniredisCache(t)
 
+	gdb := newGormDB(t, db)
+	postSvc := service.NewPostService(
+		repository.NewPostRepo(gdb),
+		repository.NewUserRepo(gdb),
+		&configs.Config{},
+		cacheSvc,
+	)
 	svc := service.NewCommentService(
-		repository.NewCommentRepo(newGormDB(t, db)),
-		repository.NewPostRepo(newGormDB(t, db)),
+		repository.NewCommentRepo(gdb),
+		postSvc,
 		cacheSvc,
 	)
 
 	const postID = 1001
-	// 第一次：帖子存在性校验(SELECT posts) + COUNT + 查评论列表(空)
+	// 第一次：GetPostById 未命中查 posts 并回填 + 评论列表未命中查 COUNT+SELECT comments 并回填
 	mock.ExpectQuery("SELECT \\* FROM `posts`").WillReturnRows(postRow(postID, 7, "标题"))
 	mock.ExpectQuery("count").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 	mock.ExpectQuery("SELECT \\* FROM `comments`").WillReturnRows(sqlmock.NewRows([]string{"comment_id"}))
@@ -51,8 +59,7 @@ func TestGetCommentPage_MissThenHit(t *testing.T) {
 		t.Fatal("首次查询后未回填缓存")
 	}
 
-	// 第二次：命中缓存，只查帖子存在性，不再查评论（COUNT/SELECT comments 不应再出现）
-	mock.ExpectQuery("SELECT \\* FROM `posts`").WillReturnRows(postRow(postID, 7, "标题"))
+	// 第二次：帖子存在性走 PostService 缓存命中，评论列表也命中缓存，不再查 DB
 	list2, total2, err := svc.GetCommentPageByPostId(context.Background(), postID, 1, 20)
 	if err != nil {
 		t.Fatalf("缓存命中查询失败: %v", err)
@@ -71,9 +78,16 @@ func TestCreateComment_InvalidatesCommentPages(t *testing.T) {
 	defer db.Close()
 	srv, cacheSvc := newMiniredisCache(t)
 
+	gdb := newGormDB(t, db)
+	postSvc := service.NewPostService(
+		repository.NewPostRepo(gdb),
+		repository.NewUserRepo(gdb),
+		&configs.Config{},
+		cacheSvc,
+	)
 	svc := service.NewCommentService(
-		repository.NewCommentRepo(newGormDB(t, db)),
-		repository.NewPostRepo(newGormDB(t, db)),
+		repository.NewCommentRepo(gdb),
+		postSvc,
 		cacheSvc,
 	)
 
@@ -109,9 +123,16 @@ func TestDeleteComment_InvalidatesCommentPages(t *testing.T) {
 	defer db.Close()
 	srv, cacheSvc := newMiniredisCache(t)
 
+	gdb := newGormDB(t, db)
+	postSvc := service.NewPostService(
+		repository.NewPostRepo(gdb),
+		repository.NewUserRepo(gdb),
+		&configs.Config{},
+		cacheSvc,
+	)
 	svc := service.NewCommentService(
-		repository.NewCommentRepo(newGormDB(t, db)),
-		repository.NewPostRepo(newGormDB(t, db)),
+		repository.NewCommentRepo(gdb),
+		postSvc,
 		cacheSvc,
 	)
 
@@ -144,9 +165,16 @@ func TestEditComment_InvalidatesCommentPages(t *testing.T) {
 	defer db.Close()
 	srv, cacheSvc := newMiniredisCache(t)
 
+	gdb := newGormDB(t, db)
+	postSvc := service.NewPostService(
+		repository.NewPostRepo(gdb),
+		repository.NewUserRepo(gdb),
+		&configs.Config{},
+		cacheSvc,
+	)
 	svc := service.NewCommentService(
-		repository.NewCommentRepo(newGormDB(t, db)),
-		repository.NewPostRepo(newGormDB(t, db)),
+		repository.NewCommentRepo(gdb),
+		postSvc,
 		cacheSvc,
 	)
 
