@@ -33,4 +33,4 @@ README.md
 .env.local
 
 # Go cache
-go.sum (optional - included for reproducibility, adjust if needed)
+# go.sum 保留在构建上下文中（builder 阶段 go mod download 需要），故不忽略

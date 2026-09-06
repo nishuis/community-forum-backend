@@ -1,0 +1,44 @@
+# 示例配置
+# 用途：
+#   1. 新 clone 的环境没有本地 configs/config.yaml 时，程序自动回退加载本文件，保证可直接构建/启动；
+#   2. 容器内运行时，docker-compose 注入的环境变量（DB_HOST 等）会覆盖本文件的值，
+#      优先级：环境变量 > YAML。
+# 注意：本文件不含任何真实凭据，仅作占位。本地开发请复制为 configs/config.yaml 后填入真实配置
+# （config.yaml 已被 .gitignore 排除，不会入库）。
+
+# config
+server:
+  port: 8080
+
+# mysql config
+mysql:
+  host: localhost
+  port: 3306
+  dbname: community_forum
+  username: root
+  password: ""            # 本地开发请填入真实密码；容器内由 DB_PASSWORD 覆盖
+  charset: utf8mb4
+
+# jwt config
+jwt:
+  secret: "dev-only-secret-change-me"   # 容器内由 JWT_SECRET 覆盖，生产环境务必显式设置
+  # 过期时间
+  access_exp_hour: 2
+  refresh_exp_day: 7
+
+# log config
+log:
+  # 日志级别：debug / info / warn / error，压测时建议 warn 或 error
+  level: info
+  # 输出目标：stdout 或日志文件路径
+  output: stdout
+
+# redis config
+redis:
+  enable: true        # 缓存总开关，false 时全部走 DB
+  host: localhost     # 容器内由 REDIS_HOST 覆盖
+  port: 6379
+  password: ""
+  db: 0
+  pool-size: 10        # 连接池最大连接数
+  min-idle-conns: 5    # 最小空闲连接

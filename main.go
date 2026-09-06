@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nishuis/community-forum-backend/configs"
@@ -17,8 +18,14 @@ import (
 )
 
 func main() {
-	//1.加载配置
-	cfg, err := configs.LoadConfig("configs/config.yaml")
+	//1.加载配置（config.yaml 缺失时回退到入库的 config.example.yaml，
+	//保证新环境 clone 后无需手动建文件即可运行；容器内靠环境变量覆盖真实值）
+	cfgPath := "configs/config.yaml"
+	if _, err := os.Stat(cfgPath); err != nil && os.IsNotExist(err) {
+		cfgPath = "configs/config.example.yaml"
+		fmt.Fprintf(os.Stderr, "未找到 configs/config.yaml，回退使用 %s\n", cfgPath)
+	}
+	cfg, err := configs.LoadConfig(cfgPath)
 	if err != nil {
 		panic(err)
 	}
