@@ -1,6 +1,11 @@
 # Build stage
 FROM golang:1.26.5-alpine AS builder
 
+# Go module 代理：国内网络直连 proxy.golang.org 不通，默认走 goproxy.cn
+# 海外构建可用 --build-arg GOPROXY=... 覆盖
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=${GOPROXY}
+
 WORKDIR /build
 
 # Install build dependencies
